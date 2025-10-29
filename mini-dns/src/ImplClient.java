@@ -23,7 +23,6 @@ public class ImplClient implements Runnable {
             DataInputStream inputStream = new DataInputStream(server.getInputStream());
 
             outputStream.writeUTF(host);
-            outputStream.flush();
 
             String address = inputStream.readUTF();
 

@@ -27,7 +27,6 @@ public class ImplRegistrator implements Runnable {
             String msg = String.format("REGISTER:%s:%s", host, addr);
             System.out.println("Sending registration: " + msg + " to " + server.getRemoteSocketAddress());
             outputStream.writeUTF(msg);
-            outputStream.flush();
 
             String resp = inputStream.readUTF();
             System.out.println("Server response: " + resp);

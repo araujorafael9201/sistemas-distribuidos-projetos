@@ -49,11 +49,9 @@ public class ImplServer implements Runnable {
                     address = "";
                 }
                 response = address;
-                System.out.println("Successfully resolved " + requestHost + " -> " + (address.isEmpty() ? "<not found>" : address));
             }
 
             outputStream.writeUTF(response);
-            outputStream.flush();
 
             inputStream.close();
             outputStream.close();

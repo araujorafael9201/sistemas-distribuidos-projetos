@@ -53,7 +53,6 @@ public class Node {
             Request req = new Request(resource, ttl);
 
             dos.writeUTF(req.toString());
-            dos.flush();
 
             String response =  dis.readUTF();
             log("Resposta recebida: " + response);

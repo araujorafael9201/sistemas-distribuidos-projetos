@@ -29,7 +29,6 @@ public class NodeImpl implements Runnable {
                 if (req.getTtl() <= 0) {
                     parent.log("TTL Excedido, passando resposta para o nó anterior na porta " + parent.prevPort);
                     dos.writeUTF("Recurso não encontrado (TTL Excedido)");
-                    dos.flush();
                     return;
                 }
 
@@ -46,7 +45,6 @@ public class NodeImpl implements Runnable {
             }
 
             dos.writeUTF(response);
-            dos.flush();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
