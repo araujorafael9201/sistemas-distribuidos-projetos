@@ -8,7 +8,7 @@ import java.util.Scanner;
 public class Node {
     public int prevPort;
     public int nextPort;
-    private int port;
+    public int port;
     private String id;
     private boolean running = true;
     private boolean canRequest;

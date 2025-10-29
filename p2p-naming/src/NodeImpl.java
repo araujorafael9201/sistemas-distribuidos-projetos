@@ -37,7 +37,7 @@ public class NodeImpl implements Runnable {
                     response = parent.request(req.getResource(), req.getTtl() - 1);
                 } else {
                     parent.log("Recurso encontrado, passando resposta para o nó anterior na porta " + parent.prevPort);
-                    response = "Recurso encontrado";
+                    response = "Recurso encontrado no nó da porta " + parent.port;
                 }
             } else {
                 parent.log("Erro na entrada de dados. Tente outra vez!");
