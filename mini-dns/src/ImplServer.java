@@ -2,13 +2,13 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ImplServer implements Runnable {
     private Socket client;
-    private HashMap<String, String> addresses;
+    private ConcurrentHashMap<String, String> addresses;
 
-    public ImplServer(Socket client, HashMap<String, String> addresses) {
+    public ImplServer(Socket client, ConcurrentHashMap<String, String> addresses) {
         this.client = client;
         this.addresses = addresses;
     }
@@ -29,9 +29,7 @@ public class ImplServer implements Runnable {
                 if (parts.length >= 3) {
                     String name = parts[1];
                     String addr = parts[2];
-                    synchronized (addresses) {
-                        addresses.put(name, addr);
-                    }
+                    addresses.put(name, addr);
                     response = "OK";
                     System.out.println("Registered " + name + " -> " + addr);
                 } else {
@@ -41,9 +39,7 @@ public class ImplServer implements Runnable {
             } else {
                 String requestHost = request;
                 String address;
-                synchronized (addresses) {
-                    address = addresses.get(requestHost);
-                }
+                address = addresses.get(requestHost);
                 if (address == null) {
                     System.out.println("Host not found: " + requestHost + "; returning empty string");
                     address = "";

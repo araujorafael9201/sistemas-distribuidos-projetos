@@ -1,13 +1,11 @@
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Server {
     private int port;
-    // ConcurrentHashMap é seguro para acesso concorrente
-    // Aqui é usado HashMap + bloco synchronized na thread
-    public static HashMap<String, String> addresses = new HashMap<String, String>(){{
+    public static ConcurrentHashMap<String, String> addresses = new ConcurrentHashMap<String, String>(){{
         put("servidor1", "192.168.0.10");
         put("servidor2", "192.168.0.20");
         put("servidor3", "192.168.0.30");
