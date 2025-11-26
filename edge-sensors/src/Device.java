@@ -37,9 +37,10 @@ public class Device {
                 double umidade = 20 + random.nextDouble() * (90 - 20); // 20-90 %
                 double temperatura = 15 + random.nextDouble() * (35 - 15); // 15-35 °C
                 double ruido = 40 + random.nextDouble() * (90 - 40);   // 40-90 dB
-                double radiacaoUV = 1 + random.nextDouble() * 10;      // Índice 1-11
+                double radiacaoUV = 1 + random.nextDouble() * 10;      // 1-11 Index
+                long timestamp = System.currentTimeMillis();
 
-                SensorDTO data = new SensorDTO(co2, co, no2, so2, pm5, pm10, umidade, temperatura, ruido, radiacaoUV);
+                SensorDTO data = new SensorDTO(co2, co, no2, so2, pm5, pm10, umidade, temperatura, ruido, radiacaoUV, timestamp);
                 byte[] buffer = data.toString().getBytes();
 
                 DatagramPacket edgePacket = new DatagramPacket(buffer, buffer.length, new InetSocketAddress(edgeLocation, edgePort));

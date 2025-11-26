@@ -12,6 +12,7 @@ public class SensorDTO implements Serializable {
     double temperatura;
     double ruido;
     double radiacaoUV;
+    long timestamp;
 
     public SensorDTO(
         double co2, 
@@ -23,7 +24,8 @@ public class SensorDTO implements Serializable {
         double umidade,
         double temperatura,
         double ruido,
-        double radiacaoUV
+        double radiacaoUV,
+        long timestamp
     ) {
 
         this.co2 = co2;
@@ -36,6 +38,7 @@ public class SensorDTO implements Serializable {
         this.temperatura = temperatura;
         this.ruido = ruido;
         this.radiacaoUV = radiacaoUV;
+        this.timestamp = timestamp;
 
     }
 
@@ -50,6 +53,7 @@ public class SensorDTO implements Serializable {
     public double getTemperatura() { return temperatura; }
     public double getRuido() { return ruido; }
     public double getRadiacaoUV() { return radiacaoUV; }
+    public long getTimestamp() { return timestamp; }
 
     // Setters
     public void setCo2(double co2) { this.co2 = co2; }
@@ -62,16 +66,17 @@ public class SensorDTO implements Serializable {
     public void setTemperatura(double temperatura) { this.temperatura = temperatura; }
     public void setRuido(double ruido) { this.ruido = ruido; }
     public void setRadiacaoUV(double radiacaoUV) { this.radiacaoUV = radiacaoUV; }
+    public void setTimestamp(long timestamp) { this.timestamp = timestamp; }
 
     @Override
     public String toString() {
-        return co2 + "," + co + "," + no2 + "," + so2 + "," + pm5 + "," + pm10 + "," + umidade + "," + temperatura + "," + ruido + "," + radiacaoUV;
+        return co2 + "," + co + "," + no2 + "," + so2 + "," + pm5 + "," + pm10 + "," + umidade + "," + temperatura + "," + ruido + "," + radiacaoUV + "," + timestamp;
     }
 
     public static SensorDTO fromString(String str) {
         String[] values = str.split(",");
-        if (values.length != 10) {
-            throw new IllegalArgumentException("Invalid SensorDTO string format: expected 10 values");
+        if (values.length != 11) {
+            throw new IllegalArgumentException("Invalid SensorDTO string format: expected 11 values");
         }
         double co2 = Double.parseDouble(values[0]);
         double co = Double.parseDouble(values[1]);
@@ -83,7 +88,8 @@ public class SensorDTO implements Serializable {
         double temperatura = Double.parseDouble(values[7]);
         double ruido = Double.parseDouble(values[8]);
         double radiacaoUV = Double.parseDouble(values[9]);
-        return new SensorDTO(co2, co, no2, so2, pm5, pm10, umidade, temperatura, ruido, radiacaoUV);
+        long timestamp = Long.parseLong(values[10]);
+        return new SensorDTO(co2, co, no2, so2, pm5, pm10, umidade, temperatura, ruido, radiacaoUV, timestamp);
     }
 
 }
