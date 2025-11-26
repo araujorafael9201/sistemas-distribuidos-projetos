@@ -39,7 +39,8 @@ public class EdgeCache {
 
     private void flushCache(SensorDTO[] dataToSend) {
         try {
-            Socket socket = new Socket("localhost", 8081);
+            String host = System.getenv("DATACENTER_HOST") != null ? System.getenv("DATACENTER_HOST") : "localhost";
+            Socket socket = new Socket(host, 8081);
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
             for (SensorDTO dto : dataToSend) {
                 if (dto != null) {

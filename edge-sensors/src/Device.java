@@ -16,7 +16,7 @@ public class Device {
     public Device(String id) {
         active = true;
         identifier = id;
-        edgeLocation = "127.0.0.1";
+        edgeLocation = System.getenv("EDGE_HOST") != null ? System.getenv("EDGE_HOST") : "127.0.0.1";
         edgePort = 8080;
         logger = new Logger(identifier);
         start();
@@ -58,6 +58,7 @@ public class Device {
     }
 
     public static void main(String[] args) {
-        new Device("Dispositivo 1");
+        String id = System.getenv("DEVICE_ID") != null ? System.getenv("DEVICE_ID") : "Dispositivo 1";
+        new Device(id);
     }
 }

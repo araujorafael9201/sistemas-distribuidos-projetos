@@ -1,0 +1,86 @@
+services:
+  datacenter:
+    build:
+      context: .
+      dockerfile: Dockerfile.datacenter
+    ports:
+      - "8081:8081"
+      - "1099:1099"
+    networks:
+      - sensor-net
+
+  edge:
+    build:
+      context: .
+      dockerfile: Dockerfile.edge
+    environment:
+      - DATACENTER_HOST=datacenter
+    ports:
+      - "8080:8080/udp"
+    depends_on:
+      - datacenter
+    networks:
+      - sensor-net
+
+  device1:
+    build:
+      context: .
+      dockerfile: Dockerfile.device
+    environment:
+      - EDGE_HOST=edge
+      - DEVICE_ID=Device-01
+    depends_on:
+      - edge
+    networks:
+      - sensor-net
+
+  device2:
+    build:
+      context: .
+      dockerfile: Dockerfile.device
+    environment:
+      - EDGE_HOST=edge
+      - DEVICE_ID=Device-02
+    depends_on:
+      - edge
+    networks:
+      - sensor-net
+
+  device3:
+    build:
+      context: .
+      dockerfile: Dockerfile.device
+    environment:
+      - EDGE_HOST=edge
+      - DEVICE_ID=Device-03
+    depends_on:
+      - edge
+    networks:
+      - sensor-net
+
+  device4:
+    build:
+      context: .
+      dockerfile: Dockerfile.device
+    environment:
+      - EDGE_HOST=edge
+      - DEVICE_ID=Device-04
+    depends_on:
+      - edge
+    networks:
+      - sensor-net
+
+  device5:
+    build:
+      context: .
+      dockerfile: Dockerfile.device
+    environment:
+      - EDGE_HOST=edge
+      - DEVICE_ID=Device-05
+    depends_on:
+      - edge
+    networks:
+      - sensor-net
+
+networks:
+  sensor-net:
