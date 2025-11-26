@@ -16,7 +16,7 @@ public class Device {
     public Device(String id) {
         active = true;
         identifier = id;
-        edgeLocation = getEdgeLocation();
+        edgeLocation = "127.0.0.1";
         edgePort = 8080;
         logger = new Logger(identifier);
         start();
@@ -55,13 +55,6 @@ public class Device {
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    /**
-     *  Utiliza RMI para localizar o servidor de borda
-     */
-    private String getEdgeLocation() {
-        return "127.0.0.1";
     }
 
     public static void main(String[] args) {
