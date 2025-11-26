@@ -1,9 +1,6 @@
+package Edge;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.Socket;
-import java.io.PrintWriter;
-import java.util.ArrayList;
-
 import utils.Logger;
 import utils.SensorDTO;
 
@@ -11,7 +8,7 @@ public class Edge {
     private Boolean active = true;
     private Logger logger;
     private final int MAX_CACHE_SIZE = 5;
-    private ArrayList<SensorDTO> cache = new ArrayList<>(MAX_CACHE_SIZE); // INSEGURO: ArrayList não trata acesso concorrente
+    private EdgeCache cache = new EdgeCache(MAX_CACHE_SIZE);
 
     public Edge(String identifier) {
         logger = new Logger(identifier);
@@ -41,29 +38,6 @@ public class Edge {
     private void processAndForward(String data) {
         SensorDTO sensorData = SensorDTO.fromString(data);
         cache.add(sensorData);
-
-        if (cache.size() > MAX_CACHE_SIZE) {
-            logger.log("Tamanho máximo do cache atingido, sincronizando com o servidor");
-            flushCache();
-        }
-    }
-
-    private void flushCache() {
-        try {
-            Socket socket = new Socket("localhost", 8081);
-            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-            for (SensorDTO dto : cache) {
-                out.println(dto.toString());
-            }
-            out.close();
-            socket.close();
-            cache.clear();
-            logger.log("Sincronização com servidor realizada com sucesso, cache limpo");
-        } catch (Exception e) {
-            logger.log("Erro na sincronização com o servidor, dados atuais em cache serão perdidos. Erro: " + e.getMessage());
-            cache.clear();
-            e.printStackTrace();
-        }
     }
 
     public static void main(String[] args) {
