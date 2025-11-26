@@ -37,7 +37,21 @@ public class Edge {
 
     private void processAndForward(String data) {
         SensorDTO sensorData = SensorDTO.fromString(data);
+        verifyData(sensorData);
         cache.add(sensorData);
+    }
+
+    private void verifyData(SensorDTO data) {
+        if (data.getTemperatura() > 30) logger.log("ALERTA: Temperatura alta: " + String.format("%.2f", data.getTemperatura()));
+        if (data.getCo2() > 900) logger.log("ALERTA: Níveis de CO2 altos: " + String.format("%.2f", data.getCo2()));
+        if (data.getCo() > 9) logger.log("ALERTA: Níveis de CO altos: " + String.format("%.2f", data.getCo()));
+        if (data.getNo2() > 0.09) logger.log("ALERTA: Níveis de NO2 altos: " + String.format("%.2f", data.getNo2()));
+        if (data.getSo2() > 0.04) logger.log("ALERTA: Níveis de SO2 altos: " + String.format("%.2f", data.getSo2()));
+        if (data.getPm5() > 90) logger.log("ALERTA: PM2.5 alto: " + String.format("%.2f", data.getPm5()));
+        if (data.getPm10() > 140) logger.log("ALERTA: PM10 alto: " + String.format("%.2f", data.getPm10()));
+        if (data.getUmidade() < 25) logger.log("ALERTA: Umidade baixa: " + String.format("%.2f", data.getUmidade()));
+        if (data.getRuido() > 85) logger.log("ALERTA: Ruído alto: " + String.format("%.2f", data.getRuido()));
+        if (data.getRadiacaoUV() > 10) logger.log("ALERTA: Radiação UV alta: " + String.format("%.2f", data.getRadiacaoUV()));
     }
 
     public static void main(String[] args) {
