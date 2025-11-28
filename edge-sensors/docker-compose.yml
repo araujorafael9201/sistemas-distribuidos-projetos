@@ -3,8 +3,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.registry
-    ports:
-      - "1099:1099"
     networks:
       - sensor-net
 
@@ -14,8 +12,6 @@ services:
       dockerfile: Dockerfile.database
     environment:
       - REGISTRY_HOST=registry
-    ports:
-      - "1101:1101"
     depends_on:
       - registry
     networks:
@@ -27,9 +23,6 @@ services:
       dockerfile: Dockerfile.datacenter
     environment:
       - REGISTRY_HOST=registry
-    ports:
-      - "8081:8081"
-      - "1100:1100"
     depends_on:
       - registry
       - database
@@ -43,8 +36,6 @@ services:
     environment:
       - REGISTRY_HOST=registry
       - DATACENTER_HOST=datacenter
-    ports:
-      - "8080:8080/udp"
     depends_on:
       - registry
       - datacenter
