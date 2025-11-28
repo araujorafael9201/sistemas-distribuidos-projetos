@@ -8,6 +8,19 @@ services:
     networks:
       - sensor-net
 
+  database:
+    build:
+      context: .
+      dockerfile: Dockerfile.database
+    environment:
+      - REGISTRY_HOST=registry
+    ports:
+      - "1101:1101"
+    depends_on:
+      - registry
+    networks:
+      - sensor-net
+
   datacenter:
     build:
       context: .
@@ -19,6 +32,7 @@ services:
       - "1100:1100"
     depends_on:
       - registry
+      - database
     networks:
       - sensor-net
 
