@@ -1,8 +1,16 @@
 package Edge;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import Registry.ServiceRegistryInterface;
 import utils.Logger;
 import utils.SensorDTO;
+import utils.ServiceRecord;
 
 public class Edge {
     private Boolean active = true;
@@ -17,6 +25,7 @@ public class Edge {
 
     public void start() {
         try {
+            registerService();
             DatagramSocket udpSocket = new DatagramSocket(8080);
             logger.log("Ouvindo na porta 8080...");
 
@@ -32,7 +41,22 @@ public class Edge {
             }
 
             udpSocket.close();
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) { 
+            logger.log("Erro fatal na inicialização: " + e.getMessage());
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+
+    private void registerService() throws RemoteException, NotBoundException, UnknownHostException {
+        logger.log("Se registrando no ServiceRegistry");
+        String registryHost = System.getenv("REGISTRY_HOST") != null ? System.getenv("REGISTRY_HOST") : "localhost";
+        Registry registry = LocateRegistry.getRegistry(registryHost, 1099);
+        ServiceRegistryInterface serviceRegistry = (ServiceRegistryInterface) registry.lookup("ServiceRegistry");
+        
+        String myHost = InetAddress.getLocalHost().getHostName();
+        serviceRegistry.register("EdgeService", new ServiceRecord(myHost, 8080, "UDP"));
+        logger.log("Registrado no ServiceRegistry como EdgeService em " + myHost + ":8080");
     }
 
     private void processAndForward(String data) {

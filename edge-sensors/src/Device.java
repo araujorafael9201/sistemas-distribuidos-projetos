@@ -2,28 +2,55 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.util.Random;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+
+import Registry.ServiceRegistryInterface;
+import utils.ServiceRecord;
 
 import utils.Logger;
 import utils.SensorDTO;
 
 public class Device {
     public String identifier;
-    public String edgeLocation;
-    public int edgePort;
     public Boolean active;
     private Logger logger;
 
     public Device(String id) {
         active = true;
         identifier = id;
-        edgeLocation = System.getenv("EDGE_HOST") != null ? System.getenv("EDGE_HOST") : "127.0.0.1";
-        edgePort = 8080;
         logger = new Logger(identifier);
         start();
     }
 
+    private ServiceRecord findEdge() {
+        try {
+            logger.log("Buscando endereço da borda");
+            String registryHost = System.getenv("REGISTRY_HOST") != null ? System.getenv("REGISTRY_HOST") : "localhost";
+            Registry registry = LocateRegistry.getRegistry(registryHost, 1099);
+            ServiceRegistryInterface serviceRegistry = (ServiceRegistryInterface) registry.lookup("ServiceRegistry");
+            ServiceRecord edgeRecord = serviceRegistry.lookup("EdgeService");
+
+            String edgeLocation = edgeRecord.getHost();
+            int edgePort = edgeRecord.getPort();
+            logger.log("Edge encontrado em " + edgeLocation + ":" + edgePort);
+
+            return edgeRecord;
+        } catch (Exception e) {
+            logger.log("Erro ao buscar borda: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     private void start() {
         try {
+            ServiceRecord edge = findEdge();
+
+            if (edge == null) {
+                throw new Exception("Não foi possível localizar a borda");
+            }
+
             DatagramSocket edgeSocket = new DatagramSocket();
             Random random = new Random();
 
@@ -43,9 +70,9 @@ public class Device {
                 SensorDTO data = new SensorDTO(co2, co, no2, so2, pm5, pm10, umidade, temperatura, ruido, radiacaoUV, timestamp);
                 byte[] buffer = data.toString().getBytes();
 
-                DatagramPacket edgePacket = new DatagramPacket(buffer, buffer.length, new InetSocketAddress(edgeLocation, edgePort));
+                DatagramPacket edgePacket = new DatagramPacket(buffer, buffer.length, new InetSocketAddress(edge.getHost(), edge.getPort()));
                 edgeSocket.send(edgePacket);
-                logger.log("Dados enviados para a borda em " + edgeLocation);
+                logger.log("Dados enviados para a borda em " + edge.getHost());
                 
                 long sleepTime = 2000 + random.nextInt(1000);
                 Thread.sleep(sleepTime);
@@ -53,6 +80,7 @@ public class Device {
 
             edgeSocket.close();
         } catch (Exception e) {
+            logger.log("Erro no dispositivo: " + e.getMessage());
             e.printStackTrace();
         }
     }

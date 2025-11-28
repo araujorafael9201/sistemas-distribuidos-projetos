@@ -3,16 +3,19 @@ import java.rmi.registry.Registry;
 import java.util.Scanner;
 
 import Datacenter.DataCenterInterface;
+import Registry.ServiceRegistryInterface;
 import utils.Logger;
+import utils.ServiceRecord;
 
 public class Client {
     private static Logger logger;
-
     public static void main(String[] args) {
         logger = new Logger("Client");
         try {
-            Registry registry = LocateRegistry.getRegistry("localhost", 1099);
-            DataCenterInterface dataCenter = (DataCenterInterface) registry.lookup("DataCenter");
+            ServiceRecord dcRecord = findDatacenter();
+
+            Registry dcRegistry = LocateRegistry.getRegistry(dcRecord.getHost(), dcRecord.getPort());
+            DataCenterInterface dataCenter = (DataCenterInterface) dcRegistry.lookup("DataCenter");
             logger.log("Conectado ao DataCenter");
 
             Scanner scanner = new Scanner(System.in);
@@ -81,6 +84,24 @@ public class Client {
             System.out.println("Erro ao conectar ao servidor: " + e.getMessage());
             logger.log("Error ao conectar ao servidor: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    private static ServiceRecord findDatacenter() {
+        try {
+            String registryHost = System.getenv("REGISTRY_HOST") != null ? System.getenv("REGISTRY_HOST") : "localhost";
+            Registry registry = LocateRegistry.getRegistry(registryHost, 1099);
+            ServiceRegistryInterface serviceRegistry = (ServiceRegistryInterface) registry.lookup("ServiceRegistry");
+            
+            ServiceRecord dcRecord = serviceRegistry.lookup("DataCenterRMI");
+            logger.log("DataCenter encontrado em " + dcRecord.getHost());
+
+            return dcRecord;
+        } catch (Exception e) {
+            System.out.println("Erro ao encontrar datacenter: " + e.getMessage());
+            logger.log("Erro ao encontrar datacenter: " + e.getMessage());
+            e.printStackTrace();
+            return null;
         }
     }
 }

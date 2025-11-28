@@ -1,11 +1,24 @@
 services:
+  registry:
+    build:
+      context: .
+      dockerfile: Dockerfile.registry
+    ports:
+      - "1099:1099"
+    networks:
+      - sensor-net
+
   datacenter:
     build:
       context: .
       dockerfile: Dockerfile.datacenter
+    environment:
+      - REGISTRY_HOST=registry
     ports:
       - "8081:8081"
-      - "1099:1099"
+      - "1100:1100"
+    depends_on:
+      - registry
     networks:
       - sensor-net
 
@@ -14,10 +27,12 @@ services:
       context: .
       dockerfile: Dockerfile.edge
     environment:
+      - REGISTRY_HOST=registry
       - DATACENTER_HOST=datacenter
     ports:
       - "8080:8080/udp"
     depends_on:
+      - registry
       - datacenter
     networks:
       - sensor-net
@@ -27,9 +42,10 @@ services:
       context: .
       dockerfile: Dockerfile.device
     environment:
-      - EDGE_HOST=edge
+      - REGISTRY_HOST=registry
       - DEVICE_ID=Device-01
     depends_on:
+      - registry
       - edge
     networks:
       - sensor-net
@@ -39,9 +55,10 @@ services:
       context: .
       dockerfile: Dockerfile.device
     environment:
-      - EDGE_HOST=edge
+      - REGISTRY_HOST=registry
       - DEVICE_ID=Device-02
     depends_on:
+      - registry
       - edge
     networks:
       - sensor-net
@@ -51,9 +68,10 @@ services:
       context: .
       dockerfile: Dockerfile.device
     environment:
-      - EDGE_HOST=edge
+      - REGISTRY_HOST=registry
       - DEVICE_ID=Device-03
     depends_on:
+      - registry
       - edge
     networks:
       - sensor-net
@@ -63,9 +81,10 @@ services:
       context: .
       dockerfile: Dockerfile.device
     environment:
-      - EDGE_HOST=edge
+      - REGISTRY_HOST=registry
       - DEVICE_ID=Device-04
     depends_on:
+      - registry
       - edge
     networks:
       - sensor-net
@@ -75,9 +94,10 @@ services:
       context: .
       dockerfile: Dockerfile.device
     environment:
-      - EDGE_HOST=edge
+      - REGISTRY_HOST=registry
       - DEVICE_ID=Device-05
     depends_on:
+      - registry
       - edge
     networks:
       - sensor-net

@@ -1,8 +1,11 @@
 package Datacenter;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -10,8 +13,10 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.List;
 
+import Registry.ServiceRegistryInterface;
 import utils.Logger;
 import utils.SensorDTO;
+import utils.ServiceRecord;
 
 public class DataCenter extends UnicastRemoteObject implements DataCenterInterface {
     private Boolean active = true;
@@ -176,15 +181,30 @@ public class DataCenter extends UnicastRemoteObject implements DataCenterInterfa
             return String.format("Status do Sistema: Total de Leituras=%d, Último Recebimento=%tF %tT", database.size(), lastTime, lastTime);
         }
     }
+    
+    private void registerRMIServer() throws RemoteException, NotBoundException, UnknownHostException {
+        logger.log("Se registrando no ServiceRegistry");
+        String registryHost = System.getenv("REGISTRY_HOST") != null ? System.getenv("REGISTRY_HOST") : "localhost";
+        Registry centralRegistry = LocateRegistry.getRegistry(registryHost, 1099);
+        ServiceRegistryInterface serviceRegistry = (ServiceRegistryInterface) centralRegistry.lookup("ServiceRegistry");
+
+        String myHost = InetAddress.getLocalHost().getHostName();
+        serviceRegistry.register("DataCenterRMI", new ServiceRecord(myHost, 1099, "RMI"));
+        logger.log("Registrado no ServiceRegistry");
+    }
 
     public static void main(String[] args) {
         try {
             DataCenter dataCenter = new DataCenter("DataCenter");
-            Registry registry = LocateRegistry.createRegistry(1099);
-            registry.rebind("DataCenter", dataCenter);
+            Registry localRegistry = LocateRegistry.createRegistry(1099);
+            localRegistry.rebind("DataCenter", dataCenter);
             dataCenter.logger.log("Servidor RMI pronto na porta 1099...");
+
+            dataCenter.registerRMIServer();
         } catch (Exception e) {
+            System.err.println("Erro fatal na inicialização do DataCenter: " + e.getMessage());
             e.printStackTrace();
+            System.exit(1);
         }
     }
 }

@@ -1,0 +1,6 @@
+FROM amazoncorretto:17
+WORKDIR /app
+COPY src ./src
+RUN mkdir bin
+RUN javac -d bin src/utils/*.java src/Registry/*.java
+CMD ["java", "-cp", "bin", "Registry.ServiceRegistry"]
