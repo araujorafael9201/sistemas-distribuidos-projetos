@@ -1,3 +1,4 @@
+package Datacenter;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.ServerSocket;
@@ -40,8 +41,8 @@ public class DataCenter extends UnicastRemoteObject implements DataCenterInterfa
                                 synchronized (database) {
                                     database.add(dto);
                                 }
-                                logger.log("Dados recebidos e armazenados");
                             }
+                            logger.log("Dados recebidos e armazenados");
                             socket.close();
                         } catch (Exception e) {
                             e.printStackTrace();

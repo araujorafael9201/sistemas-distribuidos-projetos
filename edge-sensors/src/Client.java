@@ -2,6 +2,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.Scanner;
 
+import Datacenter.DataCenterInterface;
 import utils.Logger;
 
 public class Client {
