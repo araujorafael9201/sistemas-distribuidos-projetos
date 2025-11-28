@@ -116,5 +116,19 @@ services:
     networks:
       - sensor-net
 
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    environment:
+      - REGISTRY_HOST=registry
+    networks:
+      - sensor-net
+    depends_on:
+      - registry
+      - datacenter
+    stdin_open: true
+    tty: true
+
 networks:
   sensor-net:
