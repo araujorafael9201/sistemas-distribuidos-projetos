@@ -3,4 +3,5 @@ WORKDIR /app
 COPY src ./src
 RUN mkdir bin
 RUN javac -d bin src/utils/* src/Datacenter/*.java
+EXPOSE 1099
 CMD ["java", "-cp", "bin", "Datacenter.DataCenter"]

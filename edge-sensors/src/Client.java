@@ -21,6 +21,11 @@ public class Client {
             while (true) {
                 System.out.println("\nMenu:");
                 System.out.println("1. Obter Resumo Geral");
+                System.out.println("2. Estatísticas de Temperatura");
+                System.out.println("3. Qualidade do Ar");
+                System.out.println("4. Estatísticas de Ruído");
+                System.out.println("5. Estatísticas de UV");
+                System.out.println("6. Status do Sistema");
                 System.out.println("0. Sair");
                 System.out.print("Digite sua escolha: ");
 
@@ -30,13 +35,39 @@ public class Client {
                 switch (choice) {
                     case 1:
                         try {
-                            String summary = dataCenter.getSummary();
                             System.out.println("\n--- Resumo ---");
-                            System.out.println(summary);
-                        } catch (Exception e) {
-                            logger.log("Erro ao obter resumo: " + e.getMessage());
-                            e.printStackTrace();
-                        }
+                            System.out.println(dataCenter.getSummary());
+                        } catch (Exception e) { logger.log("Erro: " + e.getMessage()); }
+                        break;
+                    case 2:
+                        try {
+                            System.out.println("\n--- Temperatura ---");
+                            System.out.println(dataCenter.getTemperatureStats());
+                        } catch (Exception e) { logger.log("Erro: " + e.getMessage()); }
+                        break;
+                    case 3:
+                        try {
+                            System.out.println("\n--- Qualidade do Ar ---");
+                            System.out.println(dataCenter.getAirQualityStatus());
+                        } catch (Exception e) { logger.log("Erro: " + e.getMessage()); }
+                        break;
+                    case 4:
+                        try {
+                            System.out.println("\n--- Ruído ---");
+                            System.out.println(dataCenter.getNoiseStats());
+                        } catch (Exception e) { logger.log("Erro: " + e.getMessage()); }
+                        break;
+                    case 5:
+                        try {
+                            System.out.println("\n--- Radiação UV ---");
+                            System.out.println(dataCenter.getUVStats());
+                        } catch (Exception e) { logger.log("Erro: " + e.getMessage()); }
+                        break;
+                    case 6:
+                        try {
+                            System.out.println("\n--- Status do Sistema ---");
+                            System.out.println(dataCenter.getSystemStatus());
+                        } catch (Exception e) { logger.log("Erro: " + e.getMessage()); }
                         break;
                     case 0:
                         System.out.println("Saindo...");

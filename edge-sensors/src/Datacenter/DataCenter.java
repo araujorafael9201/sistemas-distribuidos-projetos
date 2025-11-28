@@ -62,7 +62,7 @@ public class DataCenter extends UnicastRemoteObject implements DataCenterInterfa
         logger.log("Gerando resumo geral");
         synchronized (database) {
             if (database.isEmpty()) {
-                return "No data available";
+                return "Nenhum dado disponível";
             }
             int count = database.size();
             double sumCo2 = 0, sumCo = 0, sumNo2 = 0, sumSo2 = 0, sumPm5 = 0, sumPm10 = 0, sumUmidade = 0, sumTemperatura = 0, sumRuido = 0, sumRadiacaoUV = 0;
@@ -88,17 +88,92 @@ public class DataCenter extends UnicastRemoteObject implements DataCenterInterfa
             double avgTemperatura = sumTemperatura / count;
             double avgRuido = sumRuido / count;
             double avgRadiacaoUV = sumRadiacaoUV / count;
-            return "Summary: Count=" + count +
-                   ", Avg CO2=" + avgCo2 +
-                   ", Avg CO=" + avgCo +
-                   ", Avg NO2=" + avgNo2 +
-                   ", Avg SO2=" + avgSo2 +
-                   ", Avg PM5=" + avgPm5 +
-                   ", Avg PM10=" + avgPm10 +
-                   ", Avg Umidade=" + avgUmidade +
-                   ", Avg Temperatura=" + avgTemperatura +
-                   ", Avg Ruido=" + avgRuido +
-                   ", Avg RadiacaoUV=" + avgRadiacaoUV;
+            return "Resumo: Contagem=" + count +
+                   ", Média CO2=" + avgCo2 +
+                   ", Média CO=" + avgCo +
+                   ", Média NO2=" + avgNo2 +
+                   ", Média SO2=" + avgSo2 +
+                   ", Média PM5=" + avgPm5 +
+                   ", Média PM10=" + avgPm10 +
+                   ", Média Umidade=" + avgUmidade +
+                   ", Média Temperatura=" + avgTemperatura +
+                   ", Média Ruído=" + avgRuido +
+                   ", Média RadiaçãoUV=" + avgRadiacaoUV;
+        }
+    }
+
+    @Override
+    public String getTemperatureStats() throws RemoteException {
+        synchronized (database) {
+            if (database.isEmpty()) return "Nenhum dado disponível";
+            double min = Double.MAX_VALUE;
+            double max = Double.MIN_VALUE;
+            double sum = 0;
+            for (SensorDTO dto : database) {
+                double temp = dto.getTemperatura();
+                if (temp < min) min = temp;
+                if (temp > max) max = temp;
+                sum += temp;
+            }
+            return String.format("Estatísticas de Temperatura: Min=%.2f C, Max=%.2f C, Média=%.2f C", min, max, sum / database.size());
+        }
+    }
+
+    @Override
+    public String getAirQualityStatus() throws RemoteException {
+        synchronized (database) {
+            if (database.isEmpty()) return "Nenhum dado disponível";
+            double sumPm25 = 0;
+            for (SensorDTO dto : database) {
+                sumPm25 += dto.getPm5();
+            }
+            double avgPm25 = sumPm25 / database.size();
+            String status;
+            if (avgPm25 < 12) status = "Bom";
+            else if (avgPm25 < 35) status = "Moderado";
+            else if (avgPm25 < 55) status = "Insalubre para Grupos Sensíveis";
+            else status = "Insalubre";
+            return String.format("Qualidade do Ar (PM2.5): Status=%s, Média=%.2f ug/m3", status, avgPm25);
+        }
+    }
+
+    @Override
+    public String getNoiseStats() throws RemoteException {
+        synchronized (database) {
+            if (database.isEmpty()) return "Nenhum dado disponível";
+            double sum = 0;
+            int loudCount = 0;
+            for (SensorDTO dto : database) {
+                sum += dto.getRuido();
+                if (dto.getRuido() > 80) loudCount++;
+            }
+            return String.format("Estatísticas de Ruído: Média=%.2f dB, Eventos Altos (>80dB)=%d", sum / database.size(), loudCount);
+        }
+    }
+
+    @Override
+    public String getUVStats() throws RemoteException {
+        synchronized (database) {
+            if (database.isEmpty()) return "Nenhum dado disponível";
+            double max = 0;
+            double sum = 0;
+            int highUVCount = 0;
+            for (SensorDTO dto : database) {
+                double uv = dto.getRadiacaoUV();
+                if (uv > max) max = uv;
+                sum += uv;
+                if (uv > 6) highUVCount++;
+            }
+            return String.format("Estatísticas UV: Max=%.2f, Média=%.2f, Eventos UV Alto (>6)=%d", max, sum / database.size(), highUVCount);
+        }
+    }
+
+    @Override
+    public String getSystemStatus() throws RemoteException {
+        synchronized (database) {
+            if (database.isEmpty()) return "Status do Sistema: Nenhum dado recebido ainda.";
+            long lastTime = database.get(database.size() - 1).getTimestamp();
+            return String.format("Status do Sistema: Total de Leituras=%d, Último Recebimento=%tF %tT", database.size(), lastTime, lastTime);
         }
     }
 
