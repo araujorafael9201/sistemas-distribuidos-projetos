@@ -11,6 +11,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.List;
+import java.util.zip.CRC32;
 
 import Database.DatabaseInterface;
 import Registry.ServiceRegistryInterface;
@@ -60,6 +61,15 @@ public class DataCenter extends UnicastRemoteObject implements DataCenterInterfa
                             String line;
                             while ((line = in.readLine()) != null) {
                                 SensorDTO dto = SensorDTO.fromString(line);
+
+                                CRC32 checksum = new CRC32();
+                                checksum.update(dto.dataString().getBytes());
+
+                                if (checksum.getValue() != dto.getChecksum()) {
+                                    logger.log("ERRO: Checksum inválido recebido da Borda. Descartando dados.");
+                                    continue;
+                                }
+
                                 database.insert(dto);
                             }
                             logger.log("Dados recebidos e armazenados");
