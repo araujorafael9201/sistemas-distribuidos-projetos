@@ -7,6 +7,8 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.util.zip.CRC32;
+
 import Registry.ServiceRegistryInterface;
 import utils.Logger;
 import utils.SensorDTO;
@@ -61,6 +63,15 @@ public class Edge {
 
     private void processAndForward(String data) {
         SensorDTO sensorData = SensorDTO.fromString(data);
+
+        CRC32 checksum = new CRC32();
+        checksum.update(sensorData.dataString().getBytes());
+
+        if (checksum.getValue() != sensorData.getChecksum()) {
+            logger.log("ERRO: Checksum inválido recebido. Descartando pacote");
+            return;
+        }
+
         verifyData(sensorData);
         cache.add(sensorData);
     }

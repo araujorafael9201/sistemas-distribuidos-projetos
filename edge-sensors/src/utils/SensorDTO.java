@@ -13,6 +13,7 @@ public class SensorDTO implements Serializable {
     double ruido;
     double radiacaoUV;
     long timestamp;
+    long checksum;
 
     public SensorDTO(
         double co2, 
@@ -39,7 +40,35 @@ public class SensorDTO implements Serializable {
         this.ruido = ruido;
         this.radiacaoUV = radiacaoUV;
         this.timestamp = timestamp;
+    }
 
+    public SensorDTO(
+        double co2, 
+        double co,
+        double no2,
+        double so2,
+        double pm5,
+        double pm10,
+        double umidade,
+        double temperatura,
+        double ruido,
+        double radiacaoUV,
+        long timestamp,
+        long checksum
+    ) {
+
+        this.co2 = co2;
+        this.co = co;
+        this.no2 = no2;
+        this.so2 = so2;
+        this.pm5 = pm5;
+        this.pm10 = pm10;
+        this.umidade = umidade;
+        this.temperatura = temperatura;
+        this.ruido = ruido;
+        this.radiacaoUV = radiacaoUV;
+        this.timestamp = timestamp;
+        this.checksum = checksum;
     }
 
     // Getters
@@ -54,6 +83,7 @@ public class SensorDTO implements Serializable {
     public double getRuido() { return ruido; }
     public double getRadiacaoUV() { return radiacaoUV; }
     public long getTimestamp() { return timestamp; }
+    public long getChecksum() { return checksum; }
 
     // Setters
     public void setCo2(double co2) { this.co2 = co2; }
@@ -67,16 +97,20 @@ public class SensorDTO implements Serializable {
     public void setRuido(double ruido) { this.ruido = ruido; }
     public void setRadiacaoUV(double radiacaoUV) { this.radiacaoUV = radiacaoUV; }
     public void setTimestamp(long timestamp) { this.timestamp = timestamp; }
+    public void setChecksum(long checksum) { this.checksum = checksum; }
 
+    public String dataString() {
+        return co2 + "," + co + "," + no2 + "," + so2 + "," + pm5 + "," + pm10 + "," + umidade + "," + temperatura + "," + ruido + "," + radiacaoUV + "," + timestamp;
+    }
     @Override
     public String toString() {
-        return co2 + "," + co + "," + no2 + "," + so2 + "," + pm5 + "," + pm10 + "," + umidade + "," + temperatura + "," + ruido + "," + radiacaoUV + "," + timestamp;
+        return co2 + "," + co + "," + no2 + "," + so2 + "," + pm5 + "," + pm10 + "," + umidade + "," + temperatura + "," + ruido + "," + radiacaoUV + "," + timestamp + "," + checksum;
     }
 
     public static SensorDTO fromString(String str) {
         String[] values = str.split(",");
-        if (values.length != 11) {
-            throw new IllegalArgumentException("Invalid SensorDTO string format: expected 11 values");
+        if (values.length != 12) {
+            throw new IllegalArgumentException("Invalid SensorDTO string format: expected 12 values");
         }
         double co2 = Double.parseDouble(values[0]);
         double co = Double.parseDouble(values[1]);
@@ -89,7 +123,8 @@ public class SensorDTO implements Serializable {
         double ruido = Double.parseDouble(values[8]);
         double radiacaoUV = Double.parseDouble(values[9]);
         long timestamp = Long.parseLong(values[10]);
-        return new SensorDTO(co2, co, no2, so2, pm5, pm10, umidade, temperatura, ruido, radiacaoUV, timestamp);
+        long checksum = Long.parseLong(values[11]);
+        return new SensorDTO(co2, co, no2, so2, pm5, pm10, umidade, temperatura, ruido, radiacaoUV, timestamp, checksum);
     }
 
 }

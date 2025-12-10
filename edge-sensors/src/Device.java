@@ -2,6 +2,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.util.Random;
+import java.util.zip.CRC32;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 
@@ -68,8 +69,13 @@ public class Device {
                 long timestamp = System.currentTimeMillis();
 
                 SensorDTO data = new SensorDTO(co2, co, no2, so2, pm5, pm10, umidade, temperatura, ruido, radiacaoUV, timestamp);
-                byte[] buffer = data.toString().getBytes();
 
+                CRC32 checksum = new CRC32();
+                checksum.update(data.dataString().getBytes());
+                data.setChecksum(checksum.getValue());
+
+                byte[] buffer = data.toString().getBytes();
+                
                 DatagramPacket edgePacket = new DatagramPacket(buffer, buffer.length, new InetSocketAddress(edge.getHost(), edge.getPort()));
                 edgeSocket.send(edgePacket);
                 logger.log("Dados enviados para a borda em " + edge.getHost());
