@@ -127,7 +127,11 @@ public class DataCenter {
                     response = "Erro interno: " + e.getMessage();
                 }
   
-                out.println(response);
+                CRC32 checksum = new CRC32();
+                checksum.update(response.getBytes());
+                long checksumValue = checksum.getValue();
+
+                out.println(checksumValue + ":" + response);
             }
             socket.close();
         } catch (IOException e) {

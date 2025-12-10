@@ -19,7 +19,7 @@ public class Client {
         try {
             dcRecord = findDatacenter();
             if (dcRecord == null) {
-                System.out.println("Não foi possível encontrar o DataCenter.");
+                logger.log("Não foi possível encontrar o DataCenter.");
                 return;
             }
             
@@ -62,15 +62,14 @@ public class Client {
                         makeRequest("STATUS");
                         break;
                     case 0:
-                        System.out.println("Saindo...");
+                        logger.log("Saindo...");
                         scanner.close();
                         return;
                     default:
-                        System.out.println("Escolha inválida. Tente novamente.");
+                        logger.log("Escolha inválida. Tente novamente.");
                 }
             }
         } catch (Exception e) {
-            System.out.println("Erro ao conectar ao servidor: " + e.getMessage());
             logger.log("Error ao conectar ao servidor: " + e.getMessage());
             e.printStackTrace();
         }
@@ -83,10 +82,26 @@ public class Client {
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
             out.println(command);
-            String response = in.readLine();
+            String line = in.readLine();
             
-            System.out.println("\n--- Resposta ---");
-            System.out.println(response);
+            if (line != null) {
+                String[] parts = line.split(":", 2);
+                if (parts.length == 2) {
+                    long receivedChecksum = Long.parseLong(parts[0]);
+                    String responseData = parts[1];
+
+                    java.util.zip.CRC32 checksum = new java.util.zip.CRC32();
+                    checksum.update(responseData.getBytes());
+
+                    if (checksum.getValue() == receivedChecksum) {
+                        logger.log("Resposta recebida: " + responseData);
+                    } else {
+                        logger.log("Erro: Checksum da resposta inválido.");
+                    }
+                } else {
+                    logger.log("Erro: Resposta mal formatada do servidor.");
+                }
+            }
 
             socket.close();
         } catch (Exception e) {
