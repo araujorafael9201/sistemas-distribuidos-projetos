@@ -1,22 +1,29 @@
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.Scanner;
 
-import Datacenter.DataCenterInterface;
 import Registry.ServiceRegistryInterface;
 import utils.Logger;
 import utils.ServiceRecord;
 
 public class Client {
     private static Logger logger;
+    private static ServiceRecord dcRecord;
+
     public static void main(String[] args) {
         logger = new Logger("Client");
         try {
-            ServiceRecord dcRecord = findDatacenter();
-
-            Registry dcRegistry = LocateRegistry.getRegistry(dcRecord.getHost(), dcRecord.getPort());
-            DataCenterInterface dataCenter = (DataCenterInterface) dcRegistry.lookup("DataCenter");
-            logger.log("Conectado ao DataCenter");
+            dcRecord = findDatacenter();
+            if (dcRecord == null) {
+                System.out.println("Não foi possível encontrar o DataCenter.");
+                return;
+            }
+            
+            logger.log("Conectado ao DataCenter em " + dcRecord.getHost() + ":" + dcRecord.getPort());
 
             Scanner scanner = new Scanner(System.in);
             System.out.println("Conectado ao DataCenter. Escolha uma opção:");
@@ -37,40 +44,22 @@ public class Client {
 
                 switch (choice) {
                     case 1:
-                        try {
-                            System.out.println("\n--- Resumo ---");
-                            System.out.println(dataCenter.getSummary());
-                        } catch (Exception e) { logger.log("Erro: " + e.getMessage()); }
+                        makeRequest("SUMMARY");
                         break;
                     case 2:
-                        try {
-                            System.out.println("\n--- Temperatura ---");
-                            System.out.println(dataCenter.getTemperatureStats());
-                        } catch (Exception e) { logger.log("Erro: " + e.getMessage()); }
+                        makeRequest("TEMPERATURE");
                         break;
                     case 3:
-                        try {
-                            System.out.println("\n--- Qualidade do Ar ---");
-                            System.out.println(dataCenter.getAirQualityStatus());
-                        } catch (Exception e) { logger.log("Erro: " + e.getMessage()); }
+                        makeRequest("AIR_QUALITY");
                         break;
                     case 4:
-                        try {
-                            System.out.println("\n--- Ruído ---");
-                            System.out.println(dataCenter.getNoiseStats());
-                        } catch (Exception e) { logger.log("Erro: " + e.getMessage()); }
+                        makeRequest("NOISE");
                         break;
                     case 5:
-                        try {
-                            System.out.println("\n--- Radiação UV ---");
-                            System.out.println(dataCenter.getUVStats());
-                        } catch (Exception e) { logger.log("Erro: " + e.getMessage()); }
+                        makeRequest("UV");
                         break;
                     case 6:
-                        try {
-                            System.out.println("\n--- Status do Sistema ---");
-                            System.out.println(dataCenter.getSystemStatus());
-                        } catch (Exception e) { logger.log("Erro: " + e.getMessage()); }
+                        makeRequest("STATUS");
                         break;
                     case 0:
                         System.out.println("Saindo...");
@@ -87,20 +76,36 @@ public class Client {
         }
     }
 
+    private static void makeRequest(String command) {
+        try {
+            Socket socket = new Socket(dcRecord.getHost(), dcRecord.getPort());
+            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+            out.println(command);
+            String response = in.readLine();
+            
+            System.out.println("\n--- Resposta ---");
+            System.out.println(response);
+
+            socket.close();
+        } catch (Exception e) {
+            logger.log("Erro na requisição TCP: " + e.getMessage());
+        }
+    }
+
     private static ServiceRecord findDatacenter() {
         try {
             String registryHost = System.getenv("REGISTRY_HOST") != null ? System.getenv("REGISTRY_HOST") : "localhost";
             Registry registry = LocateRegistry.getRegistry(registryHost, 1099);
             ServiceRegistryInterface serviceRegistry = (ServiceRegistryInterface) registry.lookup("ServiceRegistry");
             
-            ServiceRecord dcRecord = serviceRegistry.lookup("DataCenterRMI");
-            logger.log("DataCenter encontrado em " + dcRecord.getHost());
+            ServiceRecord record = serviceRegistry.lookup("DataCenterClient");
+            logger.log("DataCenter encontrado em " + record.getHost());
 
-            return dcRecord;
+            return record;
         } catch (Exception e) {
-            System.out.println("Erro ao encontrar datacenter: " + e.getMessage());
-            logger.log("Erro ao encontrar datacenter: " + e.getMessage());
-            e.printStackTrace();
+            logger.log("Erro ao buscar DataCenter: " + e.getMessage());
             return null;
         }
     }
