@@ -8,6 +8,7 @@ import java.util.Map;
 import utils.Logger;
 import utils.ServiceRecord;
 import java.rmi.RemoteException;
+import java.rmi.AlreadyBoundException;
 
 public class ServiceRegistry extends UnicastRemoteObject implements ServiceRegistryInterface {
     private Map<String, ServiceRecord> services;
@@ -20,9 +21,28 @@ public class ServiceRegistry extends UnicastRemoteObject implements ServiceRegis
     }
 
     @Override
-    public void register(String serviceName, ServiceRecord record) throws RemoteException {
-        services.put(serviceName, record);
-        logger.log("Serviço registrado: " + serviceName + " -> " + record);
+    public void register(String serviceName, ServiceRecord record) throws RemoteException, AlreadyBoundException {
+        synchronized (services) {
+            if (!services.containsKey(serviceName)) {
+                services.put(serviceName, record);
+                logger.log("Serviço registrado: " + serviceName + " -> " + record);
+            } else {
+                throw new AlreadyBoundException("Serviço já registrado: " + serviceName);
+            }
+        }
+    }
+
+    @Override
+    public boolean replace(String serviceName, ServiceRecord oldRecord, ServiceRecord newRecord) throws RemoteException {
+        synchronized (services) {
+            ServiceRecord current = services.get(serviceName);
+            if (current != null && current.equals(oldRecord)) {
+                services.put(serviceName, newRecord);
+                logger.log("Serviço substituído (CAS): " + serviceName + " -> " + newRecord);
+                return true;
+            }
+            return false;
+        }
     }
 
     @Override

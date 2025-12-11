@@ -6,6 +6,7 @@ import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -25,26 +26,52 @@ public class DataCenter {
 
     public DataCenter(String identifier) {
         logger = new Logger(identifier);
-        connectToDatabase();
         startTCPServer();
         startClientServer();
     }
 
-    private void connectToDatabase() {
-        try {
-            String registryHost = System.getenv("REGISTRY_HOST") != null ? System.getenv("REGISTRY_HOST") : "localhost";
-            Registry registry = LocateRegistry.getRegistry(registryHost, 1099);
-            ServiceRegistryInterface serviceRegistry = (ServiceRegistryInterface) registry.lookup("ServiceRegistry");
-            ServiceRecord dbRecord = serviceRegistry.lookup("SensorDatabase");
-            
-            Registry dbRegistry = LocateRegistry.getRegistry(dbRecord.getHost(), dbRecord.getPort());
-            database = (DatabaseInterface) dbRegistry.lookup("SensorDatabase");
-            logger.log("Conectado ao SensorDatabase em " + dbRecord.getHost());
-        } catch (Exception e) {
-            logger.log("Erro ao conectar ao banco de dados: " + e.getMessage());
-            e.printStackTrace();
-            System.exit(1);
+    private void connectToDatabase() throws RemoteException, NotBoundException {
+        String registryHost = System.getenv("REGISTRY_HOST") != null ? System.getenv("REGISTRY_HOST") : "localhost";
+        Registry registry = LocateRegistry.getRegistry(registryHost, 1099);
+        ServiceRegistryInterface serviceRegistry = (ServiceRegistryInterface) registry.lookup("ServiceRegistry");
+        ServiceRecord dbRecord = serviceRegistry.lookup("SensorDatabase");
+
+        Registry dbRegistry = LocateRegistry.getRegistry(dbRecord.getHost(), dbRecord.getPort());
+        database = (DatabaseInterface) dbRegistry.lookup("SensorDatabase");
+        logger.log("Conectado ao SensorDatabase em " + dbRecord.getHost());
+    }
+
+    private void insertWithRetry(SensorDTO dto) throws Exception {
+        int attempts = 0;
+        while (attempts < 5) {
+            try {
+                if (database == null) connectToDatabase();
+                database.insert(dto);
+                return;
+            } catch (Exception e) {
+                logger.log("Erro ao inserir dados (Tentativa " + (attempts+1) + "): " + e.getMessage());
+                database = null;
+                try { Thread.sleep(2000); } catch (InterruptedException ie) {}
+            }
+            attempts++;
         }
+        throw new Exception("FALHA CRÍTICA: Não foi possível inserir o dado após várias tentativas.");
+    }
+
+    private List<SensorDTO> getAllWithRetry() throws Exception {
+        int attempts = 0;
+        while (attempts < 5) {
+            try {
+                if (database == null) connectToDatabase();
+                return database.getAll();
+            } catch (Exception e) {
+                logger.log("Erro ao buscar dados (Tentativa " + (attempts+1) + "): " + e.getMessage());
+                database = null;
+                try { Thread.sleep(2000); } catch (InterruptedException ie) {}
+            }
+            attempts++;
+        }
+        throw new Exception("FALHA CRÍTICA: Não foi possível buscar dados após várias tentativas.");
     }
 
     private void startTCPServer() {
@@ -70,9 +97,9 @@ public class DataCenter {
                                     continue;
                                 }
 
-                                database.insert(dto);
+                                insertWithRetry(dto);
                             }
-                            logger.log("Dados recebidos e armazenados");
+                            logger.log("Dados recebidos e processados");
                             socket.close();
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -157,8 +184,8 @@ public class DataCenter {
         logger.log("Gerando resumo geral");
         List<SensorDTO> data;
         try {
-            data = database.getAll();
-        } catch (RemoteException e) {
+            data = getAllWithRetry();
+        } catch (Exception e) {
             return "Erro ao acessar banco de dados: " + e.getMessage();
         }
         if (data.isEmpty()) {
@@ -204,8 +231,8 @@ public class DataCenter {
     public String getTemperatureStats() {
         List<SensorDTO> data;
         try {
-            data = database.getAll();
-        } catch (RemoteException e) {
+            data = getAllWithRetry();
+        } catch (Exception e) {
             return "Erro ao acessar banco de dados: " + e.getMessage();
         }
         if (data.isEmpty()) return "Nenhum dado disponível";
@@ -224,8 +251,8 @@ public class DataCenter {
     public String getAirQualityStatus() {
         List<SensorDTO> data;
         try {
-            data = database.getAll();
-        } catch (RemoteException e) {
+            data = getAllWithRetry();
+        } catch (Exception e) {
             return "Erro ao acessar banco de dados: " + e.getMessage();
         }
         if (data.isEmpty()) return "Nenhum dado disponível";
@@ -245,8 +272,8 @@ public class DataCenter {
     public String getNoiseStats() {
         List<SensorDTO> data;
         try {
-            data = database.getAll();
-        } catch (RemoteException e) {
+            data = getAllWithRetry();
+        } catch (Exception e) {
             return "Erro ao acessar banco de dados: " + e.getMessage();
         }
         if (data.isEmpty()) return "Nenhum dado disponível";
@@ -262,8 +289,8 @@ public class DataCenter {
     public String getUVStats() {
         List<SensorDTO> data;
         try {
-            data = database.getAll();
-        } catch (RemoteException e) {
+            data = getAllWithRetry();
+        } catch (Exception e) {
             return "Erro ao acessar banco de dados: " + e.getMessage();
         }
         if (data.isEmpty()) return "Nenhum dado disponível";
@@ -282,8 +309,8 @@ public class DataCenter {
     public String getSystemStatus() {
         List<SensorDTO> data;
         try {
-            data = database.getAll();
-        } catch (RemoteException e) {
+            data = getAllWithRetry();
+        } catch (Exception e) {
             return "Erro ao acessar banco de dados: " + e.getMessage();
         }
         if (data.isEmpty()) return "Status do Sistema: Nenhum dado recebido ainda.";

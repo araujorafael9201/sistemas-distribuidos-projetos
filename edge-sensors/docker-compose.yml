@@ -6,10 +6,38 @@ services:
     networks:
       - sensor-net
 
-  database:
+  database1:
     build:
       context: .
       dockerfile: Dockerfile.database
+    hostname: database1
+    command: java -cp bin Database.SensorDatabase database1 1101
+    environment:
+      - REGISTRY_HOST=registry
+    depends_on:
+      - registry
+    networks:
+      - sensor-net
+
+  database2:
+    build:
+      context: .
+      dockerfile: Dockerfile.database
+    hostname: database2
+    command: java -cp bin Database.SensorDatabase database2 1101
+    environment:
+      - REGISTRY_HOST=registry
+    depends_on:
+      - registry
+    networks:
+      - sensor-net
+
+  database3:
+    build:
+      context: .
+      dockerfile: Dockerfile.database
+    hostname: database3
+    command: java -cp bin Database.SensorDatabase database3 1101
     environment:
       - REGISTRY_HOST=registry
     depends_on:
@@ -25,7 +53,9 @@ services:
       - REGISTRY_HOST=registry
     depends_on:
       - registry
-      - database
+      - database1
+      - database2
+      - database3
     networks:
       - sensor-net
 

@@ -3,6 +3,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.rmi.AlreadyBoundException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -50,7 +51,7 @@ public class Edge {
         }
     }
 
-    private void registerService() throws RemoteException, NotBoundException, UnknownHostException {
+    private void registerService() throws RemoteException, NotBoundException, UnknownHostException, AlreadyBoundException {
         logger.log("Se registrando no ServiceRegistry");
         String registryHost = System.getenv("REGISTRY_HOST") != null ? System.getenv("REGISTRY_HOST") : "localhost";
         Registry registry = LocateRegistry.getRegistry(registryHost, 1099);

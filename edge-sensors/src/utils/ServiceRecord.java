@@ -21,4 +21,19 @@ public class ServiceRecord implements Serializable {
     public String toString() {
         return type + "://" + host + ":" + port;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ServiceRecord that = (ServiceRecord) o;
+        return port == that.port &&
+               host.equals(that.host) &&
+               type.equals(that.type);
+    }
+
+    @Override
+    public int hashCode() {
+        return java.util.Objects.hash(host, port, type);
+    }
 }
