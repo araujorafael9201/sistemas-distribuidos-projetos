@@ -74,6 +74,12 @@ public class Device {
                 checksum.update(data.dataString().getBytes());
                 data.setChecksum(checksum.getValue());
 
+                
+                if (random.nextFloat() > 0.9) {
+                    data.setChecksum(data.getChecksum() + 1);
+                    return;
+                }
+
                 byte[] buffer = data.toString().getBytes();
                 
                 DatagramPacket edgePacket = new DatagramPacket(buffer, buffer.length, new InetSocketAddress(edge.getHost(), edge.getPort()));

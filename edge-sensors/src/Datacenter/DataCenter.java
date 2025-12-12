@@ -93,10 +93,11 @@ public class DataCenter {
                                 checksum.update(dto.dataString().getBytes());
 
                                 if (checksum.getValue() != dto.getChecksum()) {
-                                    logger.log("ERRO: Checksum inválido recebido da Borda. Descartando dados.");
+                                    logger.log("[CHECKSUM] Erro: Checksum inválido recebido da Borda. Descartando.");
                                     continue;
                                 }
 
+                                logger.log("[CHECKSUM] OK");
                                 insertWithRetry(dto);
                             }
                             logger.log("Dados recebidos e processados");

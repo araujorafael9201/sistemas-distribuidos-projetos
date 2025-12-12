@@ -1,6 +1,7 @@
 package Database;
 
 import java.net.InetAddress;
+import java.rmi.AlreadyBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -26,7 +27,6 @@ public class SensorDatabase extends UnicastRemoteObject implements DatabaseInter
     private ServiceRecord currentLeader;
     private boolean running = true;
     
-    // Known peers in the cluster
     private static final String[] PEER_HOSTS = {"database1", "database2", "database3"};
     private static final int PEER_PORT = 1101;
 
@@ -135,7 +135,7 @@ public class SensorDatabase extends UnicastRemoteObject implements DatabaseInter
                     checkLeader();
                 }
                 Random r = new Random();
-                if (r.nextFloat() > 0.8) {
+                if (r.nextFloat() > 0.9) {
                     logger.log("Falha detectada, serviço caindo");
                     System.exit(1);
                 }
@@ -199,8 +199,11 @@ public class SensorDatabase extends UnicastRemoteObject implements DatabaseInter
             
             boolean success = false;
             if (deadLeader == null) {
-                registry.register("SensorDatabase", myRecord);
-                success = true;
+                try {
+                    registry.register("SensorDatabase", myRecord);
+                    success = true;
+                } catch (AlreadyBoundException aeb) {
+                }
             } else {
                 success = registry.replace("SensorDatabase", deadLeader, myRecord);
             }
