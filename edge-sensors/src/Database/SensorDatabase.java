@@ -7,6 +7,7 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import Registry.ServiceRegistryInterface;
 import utils.LogEntry;
@@ -55,13 +56,8 @@ public class SensorDatabase extends UnicastRemoteObject implements DatabaseInter
             }
         }
 
-        if (targets.size() > 0) {
-            replicateToPeer(entry, targets.get(0), true);
-        }
-
-        if (targets.size() > 1) {
-            replicateToPeer(entry, targets.get(1), false);
-        }
+        replicateToPeer(entry, targets.get(0), true);
+        replicateToPeer(entry, targets.get(1), false);
 
         applyEntry(entry);
         logger.log("Dado inserido e replicado. Index: " + index);
@@ -74,7 +70,7 @@ public class SensorDatabase extends UnicastRemoteObject implements DatabaseInter
                 DatabaseInterface peer = (DatabaseInterface) remoteRegistry.lookup("SensorDatabase");
                 peer.replicate(entry);
             } catch (Exception e) {
-                logger.log("Falha na replicação para " + host + ": " + e.getMessage());
+                logger.log("Falha na replicação para " + host);
             }
         };
 
@@ -89,7 +85,7 @@ public class SensorDatabase extends UnicastRemoteObject implements DatabaseInter
     public synchronized void replicate(LogEntry entry) throws RemoteException {
         if (entry.getIndex() > changeLog.size()) {
             applyEntry(entry);
-            logger.log("Replicação recebida. Index: " + entry.getIndex());
+            logger.log("Replicação recebida do líder " + currentLeader.getHost() + ". Index: " + entry.getIndex());
         }
     }
 
@@ -138,6 +134,11 @@ public class SensorDatabase extends UnicastRemoteObject implements DatabaseInter
                 } else {
                     checkLeader();
                 }
+                Random r = new Random();
+                if (r.nextFloat() > 0.8) {
+                    logger.log("Falha detectada, serviço caindo");
+                    System.exit(1);
+                }
                 Thread.sleep(5000);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -166,19 +167,16 @@ public class SensorDatabase extends UnicastRemoteObject implements DatabaseInter
                 leaderRef.getLeader(); // Ping
                 
                 List<LogEntry> updates = leaderRef.sync(changeLog.size());
+                logger.log("Sincronizando com o líder. Estou " + updates.size() + " logs atrasado");
                 for (LogEntry entry : updates) {
                     applyEntry(entry);
                 }
-                
             } catch (RemoteException | java.rmi.NotBoundException re) {
                 logger.log("Líder " + currentLeader.getHost() + " inacessível. Verificando registro...");
                 
                 ServiceRegistryInterface registry = getServiceRegistry();
                 ServiceRecord registeredLeader = null;
-                try {
-                    registeredLeader = registry.lookup("SensorDatabase");
-                } catch (Exception e) {
-                }
+                registeredLeader = registry.lookup("SensorDatabase");
 
                 if (!registeredLeader.equals(currentLeader)) {
                     logger.log("Novo líder detectado: " + registeredLeader.getHost());
@@ -201,11 +199,8 @@ public class SensorDatabase extends UnicastRemoteObject implements DatabaseInter
             
             boolean success = false;
             if (deadLeader == null) {
-                try {
-                    registry.register("SensorDatabase", myRecord);
-                    success = true;
-                } catch (java.rmi.AlreadyBoundException e) {
-                }
+                registry.register("SensorDatabase", myRecord);
+                success = true;
             } else {
                 success = registry.replace("SensorDatabase", deadLeader, myRecord);
             }
@@ -213,14 +208,11 @@ public class SensorDatabase extends UnicastRemoteObject implements DatabaseInter
             if (success) {
                 leader = true;
                 currentLeader = myRecord;
-                logger.log("ASSUMI A LIDERANÇA");
+                logger.log("Assumindo Liderança");
             } else {
-                try {
-                    currentLeader = registry.lookup("SensorDatabase");
-                    leader = false;
-                    logger.log("Seguindo novo líder: " + currentLeader.getHost());
-                } catch (Exception e) {
-                }
+                currentLeader = registry.lookup("SensorDatabase");
+                leader = false;
+                logger.log("Seguindo novo líder: " + currentLeader.getHost());
             }
         } catch (Exception e) {
             logger.log("Erro na eleição: " + e.getMessage());
@@ -236,7 +228,6 @@ public class SensorDatabase extends UnicastRemoteObject implements DatabaseInter
              try {
                  registry.register("SensorDatabase", myRecord);
              } catch (java.rmi.AlreadyBoundException e) {
-                 // Check if it's me
                  ServiceRecord current = registry.lookup("SensorDatabase");
                  if (!current.equals(myRecord)) {
                      logger.log("Outro líder registrado! Rebaixando...");
@@ -245,7 +236,7 @@ public class SensorDatabase extends UnicastRemoteObject implements DatabaseInter
                  }
              }
         } catch (Exception e) {
-            // Registry error
+            e.printStackTrace();
         }
     }
 

@@ -73,7 +73,7 @@ public class Edge {
             return;
         }
 
-        verifyData(sensorData);
+        // verifyData(sensorData);
         cache.add(sensorData);
     }
 

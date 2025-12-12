@@ -25,7 +25,7 @@ public class ServiceRegistry extends UnicastRemoteObject implements ServiceRegis
         synchronized (services) {
             if (!services.containsKey(serviceName)) {
                 services.put(serviceName, record);
-                logger.log("Serviço registrado: " + serviceName + " -> " + record);
+                // logger.log("Serviço registrado: " + serviceName + " -> " + record);
             } else {
                 throw new AlreadyBoundException("Serviço já registrado: " + serviceName);
             }
@@ -38,7 +38,7 @@ public class ServiceRegistry extends UnicastRemoteObject implements ServiceRegis
             ServiceRecord current = services.get(serviceName);
             if (current != null && current.equals(oldRecord)) {
                 services.put(serviceName, newRecord);
-                logger.log("Serviço substituído (CAS): " + serviceName + " -> " + newRecord);
+                // logger.log("Serviço substituído (CAS): " + serviceName + " -> " + newRecord);
                 return true;
             }
             return false;
@@ -49,10 +49,10 @@ public class ServiceRegistry extends UnicastRemoteObject implements ServiceRegis
     public ServiceRecord lookup(String serviceName) throws RemoteException {
         ServiceRecord record = services.get(serviceName);
         if (record == null) {
-            logger.log("Tentativa de busca falhou para: " + serviceName);
+            // logger.log("Tentativa de busca falhou para: " + serviceName);
             throw new RemoteException("Serviço não encontrado: " + serviceName);
         }
-        logger.log("Serviço consultado: " + serviceName + " -> " + record);
+        // logger.log("Serviço consultado: " + serviceName + " -> " + record);
         return record;
     }
 

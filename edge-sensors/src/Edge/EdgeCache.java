@@ -25,7 +25,7 @@ public class EdgeCache {
         items[head] = data;
         head += 1;
 
-        logger.log("Tamanho atual do cache: " + head);
+        // logger.log("Tamanho atual do cache: " + head);
         if (head >= size) {
             logger.log("Tamanho máximo do cache excedido, iniciando sincronização...");
             

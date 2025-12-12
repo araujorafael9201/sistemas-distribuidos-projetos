@@ -23,7 +23,7 @@ public class Client {
                 return;
             }
             
-            logger.log("Conectado ao DataCenter em " + dcRecord.getHost() + ":" + dcRecord.getPort());
+            // logger.log("Conectado ao DataCenter em " + dcRecord.getHost() + ":" + dcRecord.getPort());
 
             Scanner scanner = new Scanner(System.in);
             System.out.println("Conectado ao DataCenter. Escolha uma opção:");
@@ -116,7 +116,7 @@ public class Client {
             ServiceRegistryInterface serviceRegistry = (ServiceRegistryInterface) registry.lookup("ServiceRegistry");
             
             ServiceRecord record = serviceRegistry.lookup("DataCenterClient");
-            logger.log("DataCenter encontrado em " + record.getHost());
+            // logger.log("DataCenter encontrado em " + record.getHost());
 
             return record;
         } catch (Exception e) {

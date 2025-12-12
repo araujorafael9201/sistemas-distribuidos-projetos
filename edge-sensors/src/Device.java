@@ -26,7 +26,7 @@ public class Device {
 
     private ServiceRecord findEdge() {
         try {
-            logger.log("Buscando endereço da borda");
+            // logger.log("Buscando endereço da borda");
             String registryHost = System.getenv("REGISTRY_HOST") != null ? System.getenv("REGISTRY_HOST") : "localhost";
             Registry registry = LocateRegistry.getRegistry(registryHost, 1099);
             ServiceRegistryInterface serviceRegistry = (ServiceRegistryInterface) registry.lookup("ServiceRegistry");
@@ -34,7 +34,7 @@ public class Device {
 
             String edgeLocation = edgeRecord.getHost();
             int edgePort = edgeRecord.getPort();
-            logger.log("Edge encontrado em " + edgeLocation + ":" + edgePort);
+            // logger.log("Edge encontrado em " + edgeLocation + ":" + edgePort);
 
             return edgeRecord;
         } catch (Exception e) {
@@ -78,7 +78,7 @@ public class Device {
                 
                 DatagramPacket edgePacket = new DatagramPacket(buffer, buffer.length, new InetSocketAddress(edge.getHost(), edge.getPort()));
                 edgeSocket.send(edgePacket);
-                logger.log("Dados enviados para a borda em " + edge.getHost());
+                // logger.log("Dados enviados para a borda em " + edge.getHost());
                 
                 long sleepTime = 2000 + random.nextInt(1000);
                 Thread.sleep(sleepTime);

@@ -38,7 +38,7 @@ public class DataCenter {
 
         Registry dbRegistry = LocateRegistry.getRegistry(dbRecord.getHost(), dbRecord.getPort());
         database = (DatabaseInterface) dbRegistry.lookup("SensorDatabase");
-        logger.log("Conectado ao SensorDatabase em " + dbRecord.getHost());
+        // logger.log("Conectado ao SensorDatabase em " + dbRecord.getHost());
     }
 
     private void insertWithRetry(SensorDTO dto) throws Exception {
@@ -49,7 +49,7 @@ public class DataCenter {
                 database.insert(dto);
                 return;
             } catch (Exception e) {
-                logger.log("Erro ao inserir dados (Tentativa " + (attempts+1) + "): " + e.getMessage());
+                logger.log("Erro ao inserir dados (Tentativa " + (attempts+1) + ")");
                 database = null;
                 try { Thread.sleep(2000); } catch (InterruptedException ie) {}
             }
