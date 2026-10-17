@@ -1,28 +1,41 @@
 import java.io.IOException;
-import java.net.Socket;
+import java.net.DatagramSocket;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.security.GeneralSecurityException;
 
 public class Registrator {
-    private String serverAddr;
-    private int port;
+    private SocketAddress server;
 
     public Registrator(String serverAddr, int port) {
-        this.serverAddr = serverAddr;
-        this.port = port;
-
+        this.server = new InetSocketAddress(serverAddr, port);
         run();
     }
 
     public void run() {
-        try {
-            Socket socket = new Socket(serverAddr, port);
-            Thread t = new Thread(new ImplRegistrator(socket));
+        try (DatagramSocket socket = new DatagramSocket()) {
+            Crypto.Session session = Client.handshake(socket, server);
+            Thread t = new Thread(new ImplRegistrator(socket, server, session));
             t.start();
-        } catch (IOException e) {
+            t.join();
+        } catch (IOException | GeneralSecurityException e) {
             System.out.println("Registrator error: " + e.getMessage());
+        } catch (InterruptedException e) {
+            System.out.println("Registrator interrupted");
         }
     }
 
     public static void main(String[] args) {
-       new Registrator("127.0.0.1", 8888);
+        String host = args.length > 0 ? args[0] : "127.0.0.1";
+        int port = 8888;
+        if (args.length > 1) {
+            try {
+                port = Integer.parseInt(args[1]);
+            } catch (NumberFormatException e) {
+                System.out.println("Usage: java -cp bin Registrator [host] [port]");
+                return;
+            }
+        }
+        new Registrator(host, port);
     }
 }
