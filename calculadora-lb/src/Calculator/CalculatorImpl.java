@@ -1,68 +1,59 @@
 package Calculator;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.security.GeneralSecurityException;
+
+import utils.Crypto;
+import Client.Client;
 
 public class CalculatorImpl implements Runnable {
-    private Socket client;
-    private DataInputStream inputStream;
-    private DataOutputStream outputStream;
+    private Socket socket;
+    private String from;
 
-    public CalculatorImpl(Socket client) {
-        this.client = client;
+    public CalculatorImpl(Socket socket) {
+        this.socket = socket;
+        this.from = socket.getInetAddress().getHostAddress() + ":" + socket.getPort();
     }
 
     @Override
     public void run() {
-        try {
-            inputStream = new DataInputStream(client.getInputStream());
-            outputStream = new DataOutputStream(client.getOutputStream());
-            
-            boolean stop = false;
+        try (Socket s = socket) {
+            socket.setSoTimeout(10000);
+            Crypto.Session session = handshake();
 
-            while (!stop) {
-                String request = inputStream.readUTF();
-                String response;
-
-                if (request.equalsIgnoreCase("end")) {
-                    System.out.println("Closing connection with " + client.getInetAddress().getHostAddress());
-                    stop = true;
-                    response = "Closing connection...";
-                } else {
-                    System.out.println(String.format("Received calculation from %s: %s", client.getInetAddress().getHostAddress(), request));
-                    String op = request.split(":")[0];
-                    float n1 = Float.parseFloat(request.split(":")[1]);
-                    float n2 = Float.parseFloat(request.split(":")[2]);
-
-                    switch(op) {
-                        case "+":
-                            response = String.format("%.2f", n1 + n2);
-                            break;
-                        case "-":      
-                            response = String.format("%.2f", n1 - n2);
-                            break;
-                        case "*":      
-                            response = String.format("%.2f", n1 * n2);
-                            break;
-                        case "/":      
-                            response = String.format("%.2f", n1 / n2);
-                            break;
-                        default:
-                            response = "ERROR: Invalid operation " + op;
-                            break;
-                    }
-                }
-                System.out.println(String.format("Returning response to %s: %s", client.getInetAddress().getHostAddress(), response));
-                outputStream.writeUTF(response);
+            String request;
+            try {
+                request = Crypto.open(session, Client.receive(socket));
+            } catch (GeneralSecurityException e) {
+                System.out.println("[" + Calculator.name + "] Integrity failure (HMAC) from " + from + ": message discarded");
+                return;
             }
+            System.out.println("[" + Calculator.name + "] Received from " + from + " (HMAC valid): " + request);
 
-            inputStream.close();
-            outputStream.close();
-            client.close();
+            // O cálculo em si não importa aqui: o servidor só confirma quem atendeu a chamada.
+            String response = "OK:" + Calculator.name + " handled \"" + request + "\"";
+            if (Calculator.tamper) {
+                Client.send(socket, Crypto.corrupt(Crypto.seal(session, response)));
+                System.out.println("[" + Calculator.name + "] Sent tampered reply to " + from + ": " + response);
+            } else {
+                Client.send(socket, Crypto.seal(session, response));
+                System.out.println("[" + Calculator.name + "] Sent to " + from + ": " + response);
+            }
+        } catch (GeneralSecurityException e) {
+            System.out.println("[" + Calculator.name + "] Handshake failed for " + from + ": " + e.getMessage());
         } catch (IOException e) {
-            System.err.println("Calculator error: " + e.getMessage());
+            System.out.println("[" + Calculator.name + "] Connection error with " + from + ": " + e.getMessage());
         }
+    }
+
+    // Envia a chave pública, recebe as chaves AES + HMAC cifradas com RSA e confirma com READY.
+    private Crypto.Session handshake() throws IOException, GeneralSecurityException {
+        System.out.println("[" + Calculator.name + "] Handshake started by " + from + ", sending public key");
+        Client.send(socket, Calculator.keys.getPublic().getEncoded());
+        Crypto.Session session = Crypto.unwrapKeys(Calculator.keys.getPrivate(), Client.receive(socket));
+        System.out.println("[" + Calculator.name + "] Session keys (AES + HMAC) received from " + from);
+        Client.send(socket, Crypto.seal(session, "READY"));
+        return session;
     }
 }
