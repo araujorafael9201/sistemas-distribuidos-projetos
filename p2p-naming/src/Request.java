@@ -1,18 +1,21 @@
-import java.io.Serializable;
-
-public class Request implements Serializable
-{
+// Mensagem de busca que circula pelo anel: "<arquivo>:<origem>:<ttl>".
+public class Request {
     private String resource;
+    private int origin;
     private int ttl;
 
-    public Request(String resource, int ttl)
-    {
+    public Request(String resource, int origin, int ttl) {
         this.resource = resource;
+        this.origin = origin;
         this.ttl = ttl;
     }
 
     public String getResource() {
         return resource;
+    }
+
+    public int getOrigin() {
+        return origin;
     }
 
     public int getTtl() {
@@ -21,13 +24,11 @@ public class Request implements Serializable
 
     @Override
     public String toString() {
-        return String.format("%s:%d", resource, ttl);
+        return resource + ":" + origin + ":" + ttl;
     }
 
     public static Request fromString(String s) {
-        String resource = s.split(":")[0];
-        int ttl = Integer.parseInt(s.split(":")[1]);
-
-        return new Request(resource, ttl);
+        String[] parts = s.split(":");
+        return new Request(parts[0], Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
     }
 }

@@ -1,52 +1,79 @@
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.security.GeneralSecurityException;
 
+// Atende uma conexão recebida: uma busca vinda do nó anterior ou a resposta do dono de um arquivo.
 public class NodeImpl implements Runnable {
-    private Socket client;
-    private Node parent;
+    private Socket socket;
 
-    public NodeImpl(Socket client, Node parent) {
-        this.client = client;
-        this.parent = parent;
+    public NodeImpl(Socket socket) {
+        this.socket = socket;
     }
 
     @Override
     public void run() {
-        parent.log("Conectado ao cliente: " + client.getInetAddress().getHostName());
+        String message;
+        try (Socket s = socket) {
+            Crypto.Session session = handshake();
 
-        try {
-            DataInputStream dis = new DataInputStream(client.getInputStream());
-            DataOutputStream dos = new DataOutputStream(client.getOutputStream());
-
-            String requestString = dis.readUTF();
-
-            String response = "response";
-            Request req = Request.fromString(requestString);
-
-            if (req.getResource().startsWith("arquivo")) {
-                if (req.getTtl() <= 0) {
-                    parent.log("TTL Excedido, passando resposta para o nó anterior na porta " + parent.prevPort);
-                    dos.writeUTF("Recurso não encontrado (TTL Excedido)");
-                    return;
-                }
-
-                if (!parent.has(req.getResource())) {
-                    parent.log("Recurso não encontrado, repassando requisição para o próximo nó na porta " + parent.nextPort);
-                    response = parent.request(req.getResource(), req.getTtl() - 1);
-                } else {
-                    parent.log("Recurso encontrado, passando resposta para o nó anterior na porta " + parent.prevPort);
-                    response = "Recurso encontrado no nó da porta " + parent.port;
-                }
-            } else {
-                parent.log("Erro na entrada de dados. Tente outra vez!");
-                response = "Erro na entrada de dados. Tente outra vez";
+            try {
+                message = Crypto.open(session, Node.receive(socket));
+            } catch (GeneralSecurityException e) {
+                Node.log("Integrity failure (HMAC): message discarded, not forwarding");
+                return;
             }
-
-            dos.writeUTF(response);
+            Node.log("Received (HMAC valid): " + message);
+            Node.send(socket, Crypto.seal(session, "ACK"));
+        } catch (GeneralSecurityException e) {
+            Node.log("Handshake failed: " + e.getMessage());
+            return;
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            Node.log("Connection error: " + e.getMessage());
+            return;
         }
+
+        // Resposta do dono do arquivo para este nó (a origem da busca)
+        if (message.startsWith("FOUND:")) {
+            String[] parts = message.split(":");
+            Node.log("Result: " + parts[1] + " is at " + parts[2]);
+            return;
+        }
+        if (message.startsWith("ERR:")) {
+            Node.log("Search failed: " + message.substring("ERR:".length()));
+            return;
+        }
+
+        Request req;
+        try {
+            req = Request.fromString(message);
+        } catch (RuntimeException e) {
+            Node.log("Invalid request: " + message);
+            return;
+        }
+
+        String file = req.getResource();
+        int origin = req.getOrigin();
+        if (Node.has(file)) {
+            Node.log(file + " found here, answering P" + origin + " directly");
+            Node.deliver(origin, "FOUND:" + file + ":P" + Node.id, false);
+        } else if (req.getTtl() <= 0) {
+            Node.log("TTL expired for " + file);
+            Node.deliver(origin, "ERR:" + file + " not found", false);
+        } else {
+            Node.log(file + " not here, re-encrypting and forwarding to P" + Node.next());
+            if (!Node.deliver(Node.next(), new Request(file, origin, req.getTtl() - 1).toString(), false)) {
+                Node.deliver(origin, "ERR:search stopped at P" + Node.id, false);
+            }
+        }
+    }
+
+    // Envia a chave pública, recebe as chaves AES + HMAC cifradas com RSA e confirma com READY.
+    private Crypto.Session handshake() throws IOException, GeneralSecurityException {
+        Node.log("Handshake started by incoming connection, sending public key");
+        Node.send(socket, Node.keys.getPublic().getEncoded());
+        Crypto.Session session = Crypto.unwrapKeys(Node.keys.getPrivate(), Node.receive(socket));
+        Node.log("Session keys (AES + HMAC) received");
+        Node.send(socket, Crypto.seal(session, "READY"));
+        return session;
     }
 }
