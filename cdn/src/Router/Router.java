@@ -6,6 +6,7 @@ import java.net.DatagramSocket;
 import java.net.SocketAddress;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import utils.Crypto;
@@ -16,9 +17,28 @@ public class Router {
     public static final byte SESSION = 'S';
     public static final byte DATA = 'D';
 
-    // Edge que atende todos os clientes
-    public static final String EDGE_HOST = "127.0.0.1";
-    public static final int EDGE_PORT = 8001;
+    // Localização fictícia do cliente -> porta do edge que atende essa região
+    public static final Map<String, Integer> edges = Map.of(
+            "NORTE", 8001,
+            "SUL", 8002,
+            "LESTE", 8003,
+            "OESTE", 8004);
+
+    // Região atendida pelo edge nessa porta, ou null
+    public static String region(int port) {
+        for (Map.Entry<String, Integer> e : edges.entrySet()) {
+            if (e.getValue() == port) {
+                return e.getKey();
+            }
+        }
+        return null;
+    }
+
+    // Rótulo do edge para os logs, ex.: "SUL (8002)"
+    public static String edgeLabel(int port) {
+        String region = region(port);
+        return region == null ? String.valueOf(port) : region + " (" + port + ")";
+    }
 
     static DatagramSocket socket;
     static KeyPair keys;

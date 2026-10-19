@@ -18,14 +18,16 @@ public class ClientImpl implements Runnable {
     private DatagramSocket socket;
     private SocketAddress router;
     private Crypto.Session session;
+    private String location;
     private String file;
     private boolean corrupt;
 
     public ClientImpl(DatagramSocket socket, SocketAddress router, Crypto.Session session,
-            String file, boolean corrupt) {
+            String location, String file, boolean corrupt) {
         this.socket = socket;
         this.router = router;
         this.session = session;
+        this.location = location;
         this.file = file;
         this.corrupt = corrupt;
     }
@@ -35,7 +37,7 @@ public class ClientImpl implements Runnable {
         // 1. Pergunta ao Router (UDP cifrado) qual edge atende esta localização
         String where;
         try {
-            String msg = "WHERE:" + file;
+            String msg = "WHERE:" + location + ":" + file;
             Client.send(socket, router, Router.DATA, Crypto.seal(session, msg));
             System.out.println("Sent to router: " + msg);
             where = Crypto.open(session, Client.receive(socket, Router.DATA));
@@ -63,6 +65,8 @@ public class ClientImpl implements Runnable {
             return;
         }
         String host = parts[1];
+        String edgeLabel = Router.edgeLabel(port);
+        System.out.println("Client in " + location + " -> edge " + edgeLabel + " at " + host + ":" + port);
 
         // 2. Pede o arquivo ao edge (TCP cifrado)
         try (Socket edge = new Socket()) {
@@ -70,14 +74,14 @@ public class ClientImpl implements Runnable {
             edge.setSoTimeout(READ_TIMEOUT);
             Crypto.Session edgeSession = Client.handshake(edge, Client.keys);
 
-            String request = "GET /" + file;
+            String request = "GET /" + file + "\nRegion: " + location;
             long start = System.currentTimeMillis();
             if (corrupt) {
                 Client.send(edge, Crypto.corrupt(Crypto.seal(edgeSession, request)));
-                System.out.println("Sent tampered packet to edge " + port + ": " + request + " (the edge should close the connection)");
+                System.out.println("Sent tampered packet to edge " + edgeLabel + ": GET /" + file + " (the edge should close the connection)");
             } else {
                 Client.send(edge, Crypto.seal(edgeSession, request));
-                System.out.println("Sent to edge " + port + ": " + request);
+                System.out.println("Sent to edge " + edgeLabel + ": GET /" + file + " (Region: " + location + ")");
             }
 
             String response = Crypto.open(edgeSession, Client.receive(edge));
@@ -85,11 +89,11 @@ public class ClientImpl implements Runnable {
             System.out.println("Received (HMAC + RSA signature valid) in " + elapsed + " ms:");
             print(response);
         } catch (EOFException e) {
-            System.out.println("Edge " + port + " closed the connection without replying");
+            System.out.println("Edge " + edgeLabel + " closed the connection without replying");
         } catch (GeneralSecurityException e) {
-            System.out.println("Invalid message (HMAC/signature) from edge " + port + " discarded: " + e.getMessage());
+            System.out.println("Invalid message (HMAC/signature) from edge " + edgeLabel + " discarded: " + e.getMessage());
         } catch (IOException e) {
-            System.out.println("Edge " + port + " unavailable: " + e.getMessage());
+            System.out.println("Edge " + edgeLabel + " unavailable: " + e.getMessage());
         }
     }
 

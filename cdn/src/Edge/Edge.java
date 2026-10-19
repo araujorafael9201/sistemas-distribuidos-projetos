@@ -6,15 +6,19 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
+import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
 
 import utils.Crypto;
 import Client.Client;
+import Origin.Origin;
+import Router.Router;
 
 public class Edge {
     public static final long TTL = 10000;
 
     static int port;
+    static String label;
     static KeyPair keys;
     // nome do arquivo -> instante em que foi salvo no cache
     static ConcurrentHashMap<String, Long> cache = new ConcurrentHashMap<>();
@@ -24,13 +28,14 @@ public class Edge {
 
     public Edge(int port, String originAddr, int originPort) {
         Edge.port = port;
+        Edge.label = Router.edgeLabel(port);
         this.originAddr = originAddr;
         this.originPort = originPort;
         run();
     }
 
     static void log(String message) {
-        System.out.println("[Edge " + port + "] " + message);
+        System.out.println("[Edge " + label + "] " + message);
     }
 
     private void run() {
@@ -42,7 +47,7 @@ public class Edge {
         }
 
         try (ServerSocket ss = new ServerSocket(port)) {
-            log("Listening on TCP port " + port + ", cache TTL " + (TTL / 1000) + " s");
+            log("Serving clients in region " + Router.region(port) + ", listening on TCP port " + port + ", cache TTL " + (TTL / 1000) + " s");
             while (true) {
                 Socket s = ss.accept();
                 new Thread(new EdgeImpl(s, originAddr, originPort)).start();
@@ -85,13 +90,31 @@ public class Edge {
     }
 
     public static void main(String[] args) {
-        int port = 8001;
+        // Porta pela linha de comando ou, sem argumentos (ex.: botão Run do VS Code), pelo teclado
+        Integer port = null;
         if (args.length > 0) {
             try {
                 port = Integer.parseInt(args[0]);
             } catch (NumberFormatException e) {
                 System.out.println("Usage: java -cp bin Edge.Edge [port]");
                 return;
+            }
+        }
+        Scanner scanner = new Scanner(System.in);
+        while (port == null) {
+            System.out.print("Port (8001 = NORTE, 8002 = SUL, 8003 = LESTE, 8004 = OESTE): ");
+            if (!scanner.hasNextLine()) {
+                System.out.println("No input, exiting");
+                return;
+            }
+            try {
+                port = Integer.parseInt(scanner.nextLine().trim());
+                if (!Router.edges.containsValue(port)) {
+                    port = null;
+                    System.out.println(Origin.INPUT_ERROR);
+                }
+            } catch (NumberFormatException e) {
+                System.out.println(Origin.INPUT_ERROR);
             }
         }
         new Edge(port, "127.0.0.1", 8000);

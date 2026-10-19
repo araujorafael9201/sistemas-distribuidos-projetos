@@ -36,9 +36,21 @@ public class EdgeImpl implements Runnable {
                         + ", closing connection (cache untouched)");
                 return;
             }
+            // Clientes mandam a região na segunda linha: "GET /arquivo\nRegion: SUL"
+            String[] lines = request.split("\n", 2);
+            request = lines[0];
+            if (lines.length > 1 && lines[1].startsWith("Region: ")) {
+                from = "client in " + lines[1].substring("Region: ".length()) + " (" + from + ")";
+            }
             Edge.log("Received from " + from + " (HMAC + RSA signature valid): " + request);
 
             String response = handle(request);
+            if (request.startsWith("GET /")) {
+                // Identifica qual edge respondeu, logo abaixo da linha de status
+                int nl = response.indexOf('\n');
+                response = nl < 0 ? response + "\nEdge: " + Edge.label
+                        : response.substring(0, nl) + "\nEdge: " + Edge.label + response.substring(nl);
+            }
             Client.send(socket, Crypto.seal(session, response));
             Edge.log("Sent to " + from + ": " + response.split("\n\n")[0].replace("\n", " | "));
         } catch (GeneralSecurityException e) {

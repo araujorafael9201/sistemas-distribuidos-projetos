@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.Scanner;
 
 import utils.Crypto;
+import Origin.Origin;
 import Router.Router;
 
 public class Client {
@@ -22,10 +23,12 @@ public class Client {
     static KeyPair keys;
 
     private SocketAddress router;
+    private String location;
     private Scanner scanner;
 
-    public Client(String routerAddr, int routerPort, Scanner scanner) {
+    public Client(String routerAddr, int routerPort, String location, Scanner scanner) {
         this.router = new InetSocketAddress(routerAddr, routerPort);
+        this.location = location;
         this.scanner = scanner;
         run();
     }
@@ -48,6 +51,7 @@ public class Client {
     }
 
     private void menu(DatagramSocket socket, Crypto.Session session) {
+        System.out.println("Client in region " + location);
         System.out.println("Commands: arquivo<N>.ext | corrupt arquivo<N>.ext | sair");
         while (scanner.hasNextLine()) {
             String line = scanner.nextLine().trim();
@@ -60,7 +64,7 @@ public class Client {
             boolean corrupt = line.startsWith("corrupt ");
             String file = corrupt ? line.substring("corrupt ".length()).trim() : line;
 
-            Thread t = new Thread(new ClientImpl(socket, router, session, file, corrupt));
+            Thread t = new Thread(new ClientImpl(socket, router, session, location, file, corrupt));
             t.start();
             try {
                 t.join();
@@ -146,11 +150,25 @@ public class Client {
             try {
                 port = Integer.parseInt(args[1]);
             } catch (NumberFormatException e) {
-                System.out.println("Usage: java -cp bin Client.Client [host] [port]");
+                System.out.println("Usage: java -cp bin Client.Client [host] [port] [NORTE|SUL|LESTE|OESTE]");
                 return;
             }
         }
+        // Localização pela linha de comando ou, sem ela (ex.: botão Run do VS Code), pelo teclado
+        Scanner scanner = new Scanner(System.in);
+        String location = args.length > 2 ? args[2].trim().toUpperCase() : null;
+        while (location == null || !Router.edges.containsKey(location)) {
+            if (location != null) {
+                System.out.println(Origin.INPUT_ERROR);
+            }
+            System.out.print("Location (NORTE, SUL, LESTE, OESTE): ");
+            if (!scanner.hasNextLine()) {
+                System.out.println("No input, exiting");
+                return;
+            }
+            location = scanner.nextLine().trim().toUpperCase();
+        }
 
-        new Client(host, port, new Scanner(System.in));
+        new Client(host, port, location, scanner);
     }
 }

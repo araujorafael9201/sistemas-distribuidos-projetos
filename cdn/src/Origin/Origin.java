@@ -12,12 +12,13 @@ import java.util.regex.Pattern;
 
 import utils.Crypto;
 import Client.Client;
+import Router.Router;
 
 public class Origin {
     public static final String INPUT_ERROR = "Erro na entrada de dados. Tente outra vez!";
     public static final int FILES = 1000;
     public static final int FILE_SIZE = 1024;
-    public static final int EDGE_PORT = 8001;
+    public static final int[] EDGE_PORTS = {8001, 8002, 8003, 8004};
 
     private static final Pattern FILE = Pattern.compile("arquivo(\\d+)\\.ext");
 
@@ -105,23 +106,25 @@ public class Origin {
         }
     }
 
-    // Envia INVALIDATE cifrado para o edge.
+    // Envia INVALIDATE cifrado para cada edge, pulando os que estiverem fora do ar.
     private void invalidate(String file) {
         String msg = "INVALIDATE /" + file;
-        try (Socket socket = new Socket()) {
-            socket.connect(new InetSocketAddress("127.0.0.1", EDGE_PORT), 2000);
-            socket.setSoTimeout(5000);
-            Crypto.Session session = Client.handshake(socket, keys);
+        for (int edgePort : EDGE_PORTS) {
+            try (Socket socket = new Socket()) {
+                socket.connect(new InetSocketAddress("127.0.0.1", edgePort), 2000);
+                socket.setSoTimeout(5000);
+                Crypto.Session session = Client.handshake(socket, keys);
 
-            Client.send(socket, Crypto.seal(session, msg));
-            System.out.println("Sent to edge " + EDGE_PORT + ": " + msg);
+                Client.send(socket, Crypto.seal(session, msg));
+                System.out.println("Sent to edge " + Router.edgeLabel(edgePort) + ": " + msg);
 
-            String resp = Crypto.open(session, Client.receive(socket));
-            System.out.println("Edge " + EDGE_PORT + " response (HMAC + RSA signature valid): " + resp);
-        } catch (GeneralSecurityException e) {
-            System.out.println("Invalid response (HMAC/signature) from edge " + EDGE_PORT + " discarded: " + e.getMessage());
-        } catch (IOException e) {
-            System.out.println("Edge " + EDGE_PORT + " unavailable: " + e.getMessage());
+                String resp = Crypto.open(session, Client.receive(socket));
+                System.out.println("Edge " + Router.edgeLabel(edgePort) + " response (HMAC + RSA signature valid): " + resp);
+            } catch (GeneralSecurityException e) {
+                System.out.println("Invalid response (HMAC/signature) from edge " + Router.edgeLabel(edgePort) + " discarded: " + e.getMessage());
+            } catch (IOException e) {
+                System.out.println("Edge " + Router.edgeLabel(edgePort) + " unavailable (" + e.getMessage() + "), skipped");
+            }
         }
     }
 

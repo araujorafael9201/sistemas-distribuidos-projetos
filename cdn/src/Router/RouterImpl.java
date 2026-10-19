@@ -74,15 +74,19 @@ public class RouterImpl implements Runnable {
         }
     }
 
-    // WHERE:<arquivo> -> OK:<host>:<porta do edge>
+    // WHERE:<localização>:<arquivo> -> OK:<host>:<porta do edge>
     private String handle(String request) {
-        String[] parts = request.split(":", 2);
-        if (parts.length != 2 || !parts[0].equals("WHERE")) {
+        String[] parts = request.split(":", 3);
+        if (parts.length != 3 || !parts[0].equals("WHERE")) {
             System.out.println("Unknown request: " + request);
             return "ERR:" + Origin.INPUT_ERROR;
         }
-        String edge = Router.EDGE_HOST + ":" + Router.EDGE_PORT;
-        System.out.println("Client asking for " + parts[1] + " -> edge " + edge);
-        return "OK:" + edge;
+        Integer edge = Router.edges.get(parts[1]);
+        if (edge == null) {
+            System.out.println("Unknown location: " + parts[1]);
+            return "ERR:" + Origin.INPUT_ERROR;
+        }
+        System.out.println("Client in " + parts[1] + " asking for " + parts[2] + " -> edge " + Router.edgeLabel(edge) + " at 127.0.0.1:" + edge);
+        return "OK:127.0.0.1:" + edge;
     }
 }
