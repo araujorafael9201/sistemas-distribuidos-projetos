@@ -1,6 +1,6 @@
 # p2p-naming
 
-Distributed name resolution in a ring of six nodes (P0 to P5) over TCP, with no central server. Every hop uses hybrid crypto: an RSA handshake carries the AES and HMAC keys, then the search is AES/CBC encrypted and authenticated with HMAC-SHA256. Each node decrypts it, checks the HMAC, acknowledges it, and re-encrypts it for the next node. The node that owns the file opens its own secure connection straight back to the node that asked.
+Distributed name resolution in a ring of six nodes (P0 to P5) over TCP, with no central server. Every hop uses hybrid crypto: an RSA handshake carries the AES and HMAC keys (plus the connecting node's RSA public key), then the search is AES/CBC encrypted and authenticated with HMAC-SHA256, and the HMAC is signed by encrypting it with the sender's RSA private key (`RSA/ECB/PKCS1Padding`). Each node decrypts it, checks the HMAC and its signature, acknowledges it, and re-encrypts it for the next node. The node that owns the file opens its own secure connection straight back to the node that asked.
 
 Node `Pi` listens on port `8881 + i`, forwards to `P(i+1) % 6`, and owns `arquivo(i*10+1).ext` to `arquivo(i*10+10).ext`. Together the nodes hold 60 files.
 

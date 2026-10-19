@@ -19,10 +19,10 @@ public class NodeImpl implements Runnable {
             try {
                 message = Crypto.open(session, Node.receive(socket));
             } catch (GeneralSecurityException e) {
-                Node.log("Integrity failure (HMAC): message discarded, not forwarding");
+                Node.log("Integrity failure (" + e.getMessage() + "): message discarded, not forwarding");
                 return;
             }
-            Node.log("Received (HMAC valid): " + message);
+            Node.log("Received (HMAC + RSA signature valid): " + message);
             Node.send(socket, Crypto.seal(session, "ACK"));
         } catch (GeneralSecurityException e) {
             Node.log("Handshake failed: " + e.getMessage());
@@ -72,7 +72,7 @@ public class NodeImpl implements Runnable {
         Node.log("Handshake started by incoming connection, sending public key");
         Node.send(socket, Node.keys.getPublic().getEncoded());
         Crypto.Session session = Crypto.unwrapKeys(Node.keys.getPrivate(), Node.receive(socket));
-        Node.log("Session keys (AES + HMAC) received");
+        Node.log("Session keys (AES + HMAC) and peer RSA public key received");
         Node.send(socket, Crypto.seal(session, "READY"));
         return session;
     }

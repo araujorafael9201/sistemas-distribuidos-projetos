@@ -5,12 +5,15 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.security.GeneralSecurityException;
+import java.security.KeyPair;
 import java.util.Scanner;
 
 import utils.Crypto;
 
 public class Client {
     private static final int MAX_MESSAGE = 64 * 1024;
+
+    static KeyPair keys;
 
     private String directoryAddr;
     private int directoryPort;
@@ -22,6 +25,13 @@ public class Client {
     }
 
     public void run() {
+        try {
+            keys = Crypto.newKeyPair();
+        } catch (GeneralSecurityException e) {
+            System.err.println("Could not generate RSA keys: " + e.getMessage());
+            return;
+        }
+
         Scanner scanner = new Scanner(System.in);
         System.out.println("Commands: <soma|subtração|multiplicação|divisão> <a> <b> | sair");
         while (scanner.hasNextLine()) {
@@ -43,19 +53,20 @@ public class Client {
         }
     }
 
-    // Handshake RSA: recebe a chave pública, envia as chaves AES + HMAC cifradas e espera o READY.
-    public static Crypto.Session handshake(Socket socket) throws IOException, GeneralSecurityException {
+    // Handshake RSA: recebe a chave pública, envia as chaves AES + HMAC cifradas junto com a
+    // própria chave pública (para as assinaturas) e espera o READY.
+    public static Crypto.Session handshake(Socket socket, KeyPair mine) throws IOException, GeneralSecurityException {
         byte[] publicKey = receive(socket);
 
-        Crypto.Session session = Crypto.newSession();
-        send(socket, Crypto.wrapKeys(publicKey, session));
+        Crypto.Session session = Crypto.newSession(mine);
+        send(socket, Crypto.wrapKeys(publicKey, mine, session));
 
         String ready = Crypto.open(session, receive(socket));
         if (!ready.equals("READY")) {
             throw new GeneralSecurityException("unexpected handshake reply: " + ready);
         }
         System.out.println("Secure channel established with " + socket.getInetAddress().getHostAddress()
-                + ":" + socket.getPort() + " (HMAC valid)");
+                + ":" + socket.getPort() + " (HMAC + RSA signature valid)");
         return session;
     }
 

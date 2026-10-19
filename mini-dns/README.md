@@ -1,6 +1,6 @@
 # mini-dns
 
-Tiny Java DNS over UDP (Server, Registrator, Client). Every message uses hybrid crypto: an RSA handshake carries the AES and HMAC keys, then each datagram is AES/CBC encrypted and authenticated with HMAC-SHA256.
+Tiny Java DNS over UDP (Server, Registrator, Client). Every message uses hybrid crypto: an RSA handshake carries the AES and HMAC keys (plus the client's RSA public key), then each datagram is AES/CBC encrypted and authenticated with HMAC-SHA256, and the HMAC is signed by encrypting it with the sender's RSA private key (`RSA/ECB/PKCS1Padding`).
 
 Quick:
 - Compile: `javac -d bin src/*.java`

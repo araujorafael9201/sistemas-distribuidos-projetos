@@ -4,6 +4,7 @@ import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.security.GeneralSecurityException;
+import java.security.KeyPair;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Scanner;
@@ -67,14 +68,15 @@ public class Client {
             send(socket, server, Server.HELLO, new byte[0]);
             byte[] publicKey = receive(socket, Server.KEY);
 
-            Crypto.Session session = Crypto.newSession();
-            send(socket, server, Server.SESSION, Crypto.wrapKeys(publicKey, session));
+            KeyPair keys = Crypto.newKeyPair();
+            Crypto.Session session = Crypto.newSession(keys);
+            send(socket, server, Server.SESSION, Crypto.wrapKeys(publicKey, keys, session));
 
             String ready = Crypto.open(session, receive(socket, Server.DATA));
             if (!ready.equals("READY")) {
                 throw new GeneralSecurityException("unexpected handshake reply: " + ready);
             }
-            System.out.println("Secure channel established with " + server + " (HMAC valid)");
+            System.out.println("Secure channel established with " + server + " (HMAC + RSA signature valid)");
             return session;
         } finally {
             socket.setSoTimeout(0);

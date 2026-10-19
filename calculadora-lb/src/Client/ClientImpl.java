@@ -30,7 +30,7 @@ public class ClientImpl implements Runnable {
         try {
             lookup = call(directoryAddr, directoryPort, "LOOKUP:" + service);
         } catch (GeneralSecurityException e) {
-            System.out.println("Invalid message (HMAC) from directory discarded: " + e.getMessage());
+            System.out.println("Invalid message (HMAC/signature) from directory discarded: " + e.getMessage());
             return;
         } catch (IOException e) {
             System.out.println("Directory unavailable: " + e.getMessage());
@@ -55,7 +55,7 @@ public class ClientImpl implements Runnable {
                 System.out.println("Reply from " + name + ": " + response.substring("OK:".length()));
                 return;
             } catch (GeneralSecurityException e) {
-                System.out.println("Invalid message (HMAC) from " + name + " discarded, call aborted: " + e.getMessage());
+                System.out.println("Invalid message (HMAC/signature) from " + name + " discarded, call aborted: " + e.getMessage());
                 return;
             } catch (IOException e) {
                 System.out.println(name + " unavailable (" + e.getMessage() + "), trying next server");
@@ -69,13 +69,13 @@ public class ClientImpl implements Runnable {
         try (Socket socket = new Socket()) {
             socket.connect(new InetSocketAddress(host, port), CONNECT_TIMEOUT);
             socket.setSoTimeout(READ_TIMEOUT);
-            Crypto.Session session = Client.handshake(socket);
+            Crypto.Session session = Client.handshake(socket, Client.keys);
 
             Client.send(socket, Crypto.seal(session, message));
             System.out.println("Sent: " + message);
 
             String response = Crypto.open(session, Client.receive(socket));
-            System.out.println("Received (HMAC valid): " + response);
+            System.out.println("Received (HMAC + RSA signature valid): " + response);
             return response;
         }
     }

@@ -22,7 +22,7 @@ public class ImplClient implements Runnable {
             try {
                 message = Crypto.open(session, Client.receive(socket, Server.DATA));
             } catch (GeneralSecurityException e) {
-                System.out.println("Invalid message (HMAC) discarded: " + e.getMessage());
+                System.out.println("Invalid message (HMAC/signature) discarded: " + e.getMessage());
                 continue;
             } catch (IOException e) {
                 if (!socket.isClosed()) {
@@ -30,7 +30,7 @@ public class ImplClient implements Runnable {
                 }
                 continue;
             }
-            System.out.println("Received (HMAC valid): " + message);
+            System.out.println("Received (HMAC + RSA signature valid): " + message);
 
             String[] parts = message.split(":", 3);
             if (parts[0].equals("OK") && parts.length == 3) {

@@ -26,10 +26,10 @@ public class DirectoryImpl implements Runnable {
             try {
                 request = Crypto.open(session, Client.receive(socket));
             } catch (GeneralSecurityException e) {
-                System.out.println("Integrity failure (HMAC) from " + from + ": message discarded");
+                System.out.println("Integrity failure (" + e.getMessage() + ") from " + from + ": message discarded");
                 return;
             }
-            System.out.println("Received from " + from + " (HMAC valid): " + request);
+            System.out.println("Received from " + from + " (HMAC + RSA signature valid): " + request);
 
             String response = handle(request);
             Client.send(socket, Crypto.seal(session, response));
@@ -46,7 +46,7 @@ public class DirectoryImpl implements Runnable {
         System.out.println("Handshake started by " + from + ", sending public key");
         Client.send(socket, Directory.keys.getPublic().getEncoded());
         Crypto.Session session = Crypto.unwrapKeys(Directory.keys.getPrivate(), Client.receive(socket));
-        System.out.println("Session keys (AES + HMAC) received from " + from);
+        System.out.println("Session keys (AES + HMAC) and client RSA public key received from " + from);
         Client.send(socket, Crypto.seal(session, "READY"));
         return session;
     }

@@ -37,7 +37,7 @@ public class ImplServer implements Runnable {
         try {
             Crypto.Session session = Crypto.unwrapKeys(Server.keys.getPrivate(), payload);
             Server.sessions.put(from, session);
-            System.out.println("Session keys (AES + HMAC) received from " + from);
+            System.out.println("Session keys (AES + HMAC) and client RSA public key received from " + from);
             Server.send(from, Server.DATA, Crypto.seal(session, "READY"));
         } catch (GeneralSecurityException e) {
             System.out.println("Handshake decryption failed for " + from + ": " + e.getMessage());
@@ -55,10 +55,10 @@ public class ImplServer implements Runnable {
         try {
             request = Crypto.open(session, payload);
         } catch (GeneralSecurityException e) {
-            System.out.println("Integrity failure (HMAC) from " + from + ": packet discarded");
+            System.out.println("Integrity failure (" + e.getMessage() + ") from " + from + ": packet discarded");
             return;
         }
-        System.out.println("Received from " + from + " (HMAC valid): " + request);
+        System.out.println("Received from " + from + " (HMAC + RSA signature valid): " + request);
 
         String response = handle(request);
         reply(from, session, response);

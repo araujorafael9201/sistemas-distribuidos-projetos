@@ -38,14 +38,14 @@ public class ImplRegistrator implements Runnable {
 
             socket.setSoTimeout(3000);
             String resp = Crypto.open(session, Client.receive(socket, Server.DATA));
-            System.out.println("Server response (HMAC valid): " + resp);
+            System.out.println("Server response (HMAC + RSA signature valid): " + resp);
             if (resp.startsWith("ERR:")) {
                 System.out.println(resp.substring("ERR:".length()));
             }
         } catch (SocketTimeoutException e) {
             System.out.println("No response from server");
         } catch (GeneralSecurityException e) {
-            System.out.println("Invalid response (HMAC) discarded: " + e.getMessage());
+            System.out.println("Invalid response (HMAC/signature) discarded: " + e.getMessage());
         } catch (IOException e) {
             System.out.println("Error updating address on server: " + e.getMessage());
         }

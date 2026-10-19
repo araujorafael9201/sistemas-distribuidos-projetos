@@ -52,16 +52,16 @@ public class Calculator {
     private void register() {
         try (Socket socket = new Socket()) {
             socket.connect(new InetSocketAddress(directoryAddr, directoryPort), 3000);
-            Crypto.Session session = Client.handshake(socket);
+            Crypto.Session session = Client.handshake(socket, keys);
 
             String msg = "REGISTER:" + name + ":" + port;
             Client.send(socket, Crypto.seal(session, msg));
             System.out.println("Sent: " + msg);
 
             String resp = Crypto.open(session, Client.receive(socket));
-            System.out.println("Directory response (HMAC valid): " + resp);
+            System.out.println("Directory response (HMAC + RSA signature valid): " + resp);
         } catch (GeneralSecurityException e) {
-            System.out.println("Invalid response (HMAC) discarded: " + e.getMessage());
+            System.out.println("Invalid response (HMAC/signature) discarded: " + e.getMessage());
         } catch (IOException e) {
             System.out.println("Could not register with directory: " + e.getMessage());
         }

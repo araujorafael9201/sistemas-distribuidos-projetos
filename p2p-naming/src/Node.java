@@ -152,25 +152,26 @@ public class Node {
         } catch (EOFException e) {
             log("No reply from P" + peer + " (connection closed)");
         } catch (GeneralSecurityException e) {
-            log("Invalid message (HMAC) from P" + peer + " discarded: " + e.getMessage());
+            log("Invalid message (HMAC/signature) from P" + peer + " discarded: " + e.getMessage());
         } catch (IOException e) {
             log("P" + peer + " unavailable: " + e.getMessage());
         }
         return false;
     }
 
-    // Handshake RSA: recebe a chave pública, envia as chaves AES + HMAC cifradas e espera o READY.
+    // Handshake RSA: recebe a chave pública, envia as chaves AES + HMAC cifradas junto com a
+    // própria chave pública (para as assinaturas) e espera o READY.
     static Crypto.Session handshake(Socket socket, int peer) throws IOException, GeneralSecurityException {
         byte[] publicKey = receive(socket);
 
-        Crypto.Session session = Crypto.newSession();
-        send(socket, Crypto.wrapKeys(publicKey, session));
+        Crypto.Session session = Crypto.newSession(keys);
+        send(socket, Crypto.wrapKeys(publicKey, keys, session));
 
         String ready = Crypto.open(session, receive(socket));
         if (!ready.equals("READY")) {
             throw new GeneralSecurityException("unexpected handshake reply: " + ready);
         }
-        log("Secure channel established with P" + peer + " (HMAC valid)");
+        log("Secure channel established with P" + peer + " (HMAC + RSA signature valid)");
         return session;
     }
 

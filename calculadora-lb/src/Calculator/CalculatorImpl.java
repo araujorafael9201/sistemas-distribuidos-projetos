@@ -26,10 +26,10 @@ public class CalculatorImpl implements Runnable {
             try {
                 request = Crypto.open(session, Client.receive(socket));
             } catch (GeneralSecurityException e) {
-                System.out.println("[" + Calculator.name + "] Integrity failure (HMAC) from " + from + ": message discarded");
+                System.out.println("[" + Calculator.name + "] Integrity failure (" + e.getMessage() + ") from " + from + ": message discarded");
                 return;
             }
-            System.out.println("[" + Calculator.name + "] Received from " + from + " (HMAC valid): " + request);
+            System.out.println("[" + Calculator.name + "] Received from " + from + " (HMAC + RSA signature valid): " + request);
 
             // O cálculo em si não importa aqui: o servidor só confirma quem atendeu a chamada.
             String response = "OK:" + Calculator.name + " handled \"" + request + "\"";
@@ -52,7 +52,7 @@ public class CalculatorImpl implements Runnable {
         System.out.println("[" + Calculator.name + "] Handshake started by " + from + ", sending public key");
         Client.send(socket, Calculator.keys.getPublic().getEncoded());
         Crypto.Session session = Crypto.unwrapKeys(Calculator.keys.getPrivate(), Client.receive(socket));
-        System.out.println("[" + Calculator.name + "] Session keys (AES + HMAC) received from " + from);
+        System.out.println("[" + Calculator.name + "] Session keys (AES + HMAC) and client RSA public key received from " + from);
         Client.send(socket, Crypto.seal(session, "READY"));
         return session;
     }
